@@ -1,0 +1,29 @@
+;===- ./lib/Target/Mups16/LLVMBuild.txt --------------------------*- Conf -*--===;
+
+[common]
+;subdirectories = AsmParser Disassembler MCTargetDesc TargetInfo
+
+[component_0]
+type = TargetGroup
+name = Mups16
+parent = Target
+;has_asmparser = 1
+has_asmprinter = 1
+;has_disassembler = 1
+;has_jit = 1
+
+[component_1]
+type = Library
+name = Mups16CodeGen
+parent = Mups16
+required_libraries =
+ Analysis
+ AsmPrinter
+ CodeGen
+ Core
+ MC
+ SelectionDAG
+ Support
+ Target
+ GlobalISel
+add_to_library_groups = Mups16
