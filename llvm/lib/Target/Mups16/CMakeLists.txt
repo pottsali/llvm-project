@@ -54,4 +54,4 @@ add_llvm_target(Mups16CodeGen
     )
 
 #add_subdirectory(MCTargetDesc)
-#add_subdirectory(TargetInfo)
+add_subdirectory(TargetInfo)

@@ -47,6 +47,7 @@ StringRef Triple::getArchTypeName(ArchType Kind) {
   case mips64el:       return "mips64el";
   case mips:           return "mips";
   case mipsel:         return "mipsel";
+  case mups16:         return "mups16";
   case msp430:         return "msp430";
   case nvptx64:        return "nvptx64";
   case nvptx:          return "nvptx";
@@ -692,6 +693,7 @@ static Triple::ObjectFormatType getDefaultFormat(const Triple &T) {
   case Triple::mips:
   case Triple::mipsel:
   case Triple::msp430:
+  case Triple::mups16: // TODO: define custom raw foramat? maybe one exists?
   case Triple::nvptx64:
   case Triple::nvptx:
   case Triple::ppc64le:
@@ -1242,6 +1244,7 @@ static unsigned getArchPointerBitWidth(llvm::Triple::ArchType Arch) {
 
   case llvm::Triple::avr:
   case llvm::Triple::msp430:
+  case llvm::Triple::mups16:
     return 16;
 
   case llvm::Triple::aarch64_32:
@@ -1321,6 +1324,7 @@ Triple Triple::get32BitArchVariant() const {
   case Triple::bpfeb:
   case Triple::bpfel:
   case Triple::msp430:
+  case Triple::mups16:
   case Triple::ppc64le:
   case Triple::systemz:
   case Triple::ve:
@@ -1387,6 +1391,7 @@ Triple Triple::get64BitArchVariant() const {
   case Triple::kalimba:
   case Triple::lanai:
   case Triple::msp430:
+  case Triple::mups16:
   case Triple::r600:
   case Triple::shave:
   case Triple::sparcel:
