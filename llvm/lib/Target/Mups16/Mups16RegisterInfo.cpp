@@ -14,6 +14,7 @@
 #include "Mups16RegisterInfo.h"
 //#include "Mups16MachineFunctionInfo.h"
 //#include "Mups16Subtarget.h"
+#include "Mups16FrameLowering.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/STLExtras.h"
 //#include "llvm/CodeGen/MachineFrameInfo.h"
@@ -51,7 +52,7 @@ BitVector Mups16RegisterInfo::getReservedRegs(const MachineFunction &MF) const
 
     reserved.set(MUPS::R1);
 
-    return Reserved;
+    return reserved;
 }
 
 const TargetRegisterClass* Mups16RegisterInfo::getPointerRegClass(const MachineFunction &MF,

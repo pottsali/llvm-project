@@ -17,7 +17,7 @@ include "llvm/Target/Target.td"
 include "Mups16RegisterInfo.td"
 //include "Mups16Schedule.td"
 include "Mups16InstrInfo.td"
-//include "Mups16CallingConv.td"
+include "Mups16CallingConv.td"
 //include "Mups16RegisterBanks.td"
 
 // Avoid forward declaration issues.
