@@ -30,7 +30,7 @@ add_llvm_target(Mups16CodeGen
     #Mups16InstructionSelector.cpp
     #Mups16ISelDAGToDAG.cpp
     #Mups16ISelLowering.cpp
-    #Mups16FrameLowering.cpp
+    Mups16FrameLowering.cpp
     #Mups16LegalizerInfo.cpp
     #Mups16BranchExpansion.cpp
     #Mups16MCInstLower.cpp
@@ -47,11 +47,10 @@ add_llvm_target(Mups16CodeGen
     #Mups16SEISelLowering.cpp
     #Mups16SERegisterInfo.cpp
     #Mups16Subtarget.cpp
-    Mups16MCTargetDesc.cpp
     Mups16TargetMachine.cpp
     #Mups16TargetObjectFile.cpp
     #MicroMups16SizeReduction.cpp
     )
 
-#add_subdirectory(MCTargetDesc)
+add_subdirectory(MCTargetDesc)
 add_subdirectory(TargetInfo)
