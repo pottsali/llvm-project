@@ -1,0 +1,1 @@
+mkdir -p build && cd build && cmake -DLLVM_ENABLE_PROJECTS=clang -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=Mups16 -DLLVM_TARGETS_TO_BUILD="Mups16;MSP430;X86" -DCMAKE_BUILD_TYPE=release -G Ninja ../llvm
