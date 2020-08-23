@@ -1,6 +1,6 @@
 set(LLVM_TARGET_DEFINITIONS Mups16.td)
 
-#tablegen(LLVM Mups16GenAsmMatcher.inc -gen-asm-matcher)
+tablegen(LLVM Mups16GenAsmMatcher.inc -gen-asm-matcher)
 tablegen(LLVM Mups16GenAsmWriter.inc -gen-asm-writer)
 tablegen(LLVM Mups16GenCallingConv.inc -gen-callingconv)
 tablegen(LLVM Mups16GenDAGISel.inc -gen-dag-isel)
@@ -54,3 +54,4 @@ add_llvm_target(Mups16CodeGen
 
 add_subdirectory(MCTargetDesc)
 add_subdirectory(TargetInfo)
+add_subdirectory(AsmParser)
