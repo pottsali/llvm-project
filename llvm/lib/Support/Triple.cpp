@@ -70,6 +70,7 @@ StringRef Triple::getArchTypeName(ArchType Kind) {
   case wasm64:         return "wasm64";
   case renderscript32: return "renderscript32";
   case renderscript64: return "renderscript64";
+  case mups16:         return "mups16";
   }
 
   llvm_unreachable("Invalid ArchType!");
@@ -682,6 +683,7 @@ static Triple::ObjectFormatType getDefaultFormat(const Triple &T) {
   case Triple::mips64el:
   case Triple::mipsel:
   case Triple::msp430:
+  case Triple::mups16: // TODO: define custom raw foramat? maybe one exists?
   case Triple::nvptx:
   case Triple::nvptx64:
   case Triple::ppc64le:
@@ -1232,6 +1234,7 @@ static unsigned getArchPointerBitWidth(llvm::Triple::ArchType Arch) {
 
   case llvm::Triple::avr:
   case llvm::Triple::msp430:
+  case llvm::Triple::mups16:
     return 16;
 
   case llvm::Triple::aarch64_32:
@@ -1310,6 +1313,7 @@ Triple Triple::get32BitArchVariant() const {
   case Triple::bpfel:
   case Triple::bpfeb:
   case Triple::msp430:
+  case Triple::mups16:
   case Triple::systemz:
   case Triple::ppc64le:
     T.setArch(UnknownArch);
@@ -1375,6 +1379,7 @@ Triple Triple::get64BitArchVariant() const {
   case Triple::kalimba:
   case Triple::lanai:
   case Triple::msp430:
+  case Triple::mups16:
   case Triple::r600:
   case Triple::tce:
   case Triple::tcele:

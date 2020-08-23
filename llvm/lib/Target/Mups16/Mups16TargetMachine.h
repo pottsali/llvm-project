@@ -1,4 +1,4 @@
-//===- MipsTargetMachine.h - Define TargetMachine for Mups16 ------*- C++ -*-===//
+//===- Mups16TargetMachine.h - Define TargetMachine for Mups16 ------*- C++ -*-===//
 //
 // This file declares the Mups16 specific subclass of TargetMachine.
 //
@@ -17,22 +17,17 @@
 namespace llvm
 {
 
-class Mups16TargetMachine : public LLVMTargetMachine 
+class Mups16TargetMachine : public LLVMTargetMachine
 {
-    Mups16Subtarget Subtarget;
-
+    std::unique_ptr<TargetLoweringObjectFile> TLOF;
 public:
-    MipsTargetMachine(const Target &T, const Triple &TT, StringRef CPU,
+    Mups16TargetMachine(const Target &T, const Triple &TT, StringRef CPU,
             StringRef FS, const TargetOptions &Options,
             Optional<Reloc::Model> RM, Optional<CodeModel::Model> CM,
             CodeGenOpt::Level OL, bool JIT);
-    ~MipsTargetMachine() override;
-    void anchor() override;
+    ~Mups16TargetMachine() override;
 
     TargetTransformInfo getTargetTransformInfo(const Function &F) override;
-
-    const MipsSubtarget *getSubtargetImpl() const { return &Subtarget; }
-    const MipsSubtarget *getSubtargetImpl(const Function &F) const override;
 
     // Pass Pipeline Configuration
     TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
@@ -40,8 +35,6 @@ public:
     TargetLoweringObjectFile *getObjFileLowering() const override {
         return TLOF.get();
     }
-
-    const MipsABIInfo &getABI() const { return ABI; }
 };
 
 } // end namespace llvm
