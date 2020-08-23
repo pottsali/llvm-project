@@ -27,7 +27,7 @@ public:
             CodeGenOpt::Level OL, bool JIT);
     ~Mups16TargetMachine() override;
 
-    TargetTransformInfo getTargetTransformInfo(const Function &F) override;
+    //TargetTransformInfo getTargetTransformInfo(const Function &F) override;
 
     // Pass Pipeline Configuration
     TargetPassConfig *createPassConfig(PassManagerBase &PM) override;

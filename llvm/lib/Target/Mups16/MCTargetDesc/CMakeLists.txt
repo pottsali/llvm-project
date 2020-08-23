@@ -1,0 +1,10 @@
+add_llvm_component_library(LLVMMups16Desc
+  #Mups16AsmBackend.cpp
+  #Mups16ELFObjectWriter.cpp
+  #Mups16InstPrinter.cpp
+  #Mups16MCAsmInfo.cpp
+  #Mups16MCCodeEmitter.cpp
+  Mups16MCTargetDesc.cpp
+  #Mups16MCExpr.cpp
+  #Mups16TargetStreamer.cpp
+  )
