@@ -43,8 +43,10 @@ def TMP : Ri< 5, "TMP">;
 // allocation order...
 //
 def IntRegs : RegisterClass<"MUPS", [i16], 16, (add R0, R1, R2, R3, R4, SP, PC, RA)>;
+def IntReg : RegisterOperand<IntRegs>;
 
 let isAllocatable = 0 in {
   def SysRegs : RegisterClass<"MUPS", [i16], 16, (add R0, SP, PC, RA, SPC, S1, S2, S3, TSP, TMP)>;
 }
+def SysReg : RegisterOperand<SysRegs>;
 

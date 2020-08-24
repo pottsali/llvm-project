@@ -49,3 +49,14 @@ void Mups16InstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
   }
 }
 
+template <unsigned Bits>
+void Mups16InstPrinter::printUImm(const MCInst *MI, int opNum, raw_ostream &O) {
+  const MCOperand &MO = MI->getOperand(opNum);
+  if (MO.isImm()) {
+    uint64_t Imm = MO.getImm();
+    Imm &= (1 << Bits) - 1;
+    O << formatImm(Imm);
+    return;
+  }
+  printOperand(MI, opNum, O);
+}

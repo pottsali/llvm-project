@@ -37,6 +37,8 @@ namespace llvm {
 private:
     void printOperand(const MCInst *MI, unsigned OpNo, raw_ostream &O,
                       const char *Modifier = nullptr);
+    template <unsigned Bits>
+    void printUImm(const MCInst *MI, int opNum, raw_ostream &O);
   };
 }
 
