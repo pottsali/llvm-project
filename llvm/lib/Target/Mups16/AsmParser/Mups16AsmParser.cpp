@@ -55,25 +55,12 @@ class Mups16AsmParser : public MCTargetAsmParser {
                         SMLoc NameLoc, OperandVector &Operands) override;
 
   bool ParseDirective(AsmToken DirectiveID) override;
-  /*
-  bool ParseDirectiveRefSym(AsmToken DirectiveID);
 
-  unsigned validateTargetOperandClass(MCParsedAsmOperand &Op,
-                                      unsigned Kind) override;
-
-  bool parseJccInstruction(ParseInstructionInfo &Info, StringRef Name,
-                           SMLoc NameLoc, OperandVector &Operands);
-  */
-
+  bool parseMemOperand(OperandVector &Operands, const MCExpr *Val, SMLoc StartLoc);
   bool parseOperand(OperandVector &, StringRef Mnemonic);
 
-  /*
   bool ParseLiteralValues(unsigned Size, SMLoc L);
 
-  MCAsmParser &getParser() const { return Parser; }
-  MCAsmLexer &getLexer() const { return Parser.getLexer(); }
-
-  */
   /// @name Auto-generated Matcher Functions
   /// {
 
@@ -86,10 +73,7 @@ public:
   Mups16AsmParser(const MCSubtargetInfo &STI, MCAsmParser &Parser,
                   const MCInstrInfo &MII, const MCTargetOptions &Options)
       : MCTargetAsmParser(Options, STI, MII), STI(STI), Parser(Parser) {
-    //MCAsmParserExtension::Initialize(Parser);
-    //MRI = getContext().getRegisterInfo();
-
-    //setAvailableFeatures(ComputeAvailableFeatures(STI.getFeatureBits()));
+    MCAsmParserExtension::Initialize(Parser);
   }
 };
 
@@ -450,7 +434,6 @@ bool Mups16AsmParser::ParseDirectiveRefSym(AsmToken DirectiveID) {
 
 */
 bool Mups16AsmParser::ParseDirective(AsmToken DirectiveID) {
-    /*
   StringRef IDVal = DirectiveID.getIdentifier();
   if (IDVal.lower() == ".long") {
     ParseLiteralValues(4, DirectiveID.getLoc());
@@ -458,11 +441,24 @@ bool Mups16AsmParser::ParseDirective(AsmToken DirectiveID) {
     ParseLiteralValues(2, DirectiveID.getLoc());
   } else if (IDVal.lower() == ".byte") {
     ParseLiteralValues(1, DirectiveID.getLoc());
-  } else if (IDVal.lower() == ".refsym") {
-    return ParseDirectiveRefSym(DirectiveID);
+//  } else if (IDVal.lower() == ".refsym") {
+//    return ParseDirectiveRefSym(DirectiveID);
   }
-  */
   return true;
+}
+
+bool Mups16AsmParser::parseMemOperand(OperandVector &Operands, const MCExpr *Val, SMLoc StartLoc) {
+    getLexer().Lex(); // Eat '('
+    SMLoc RegStartLoc, RegEndLoc;
+    unsigned RegNo = MUPS::NoRegister;
+    if (ParseRegister(RegNo, RegStartLoc, RegEndLoc))
+      return true;
+    if (getLexer().getKind() != AsmToken::RParen)
+      return true;
+    SMLoc EndLoc = getParser().getTok().getEndLoc();
+    getLexer().Lex(); // Eat ')'
+    Operands.push_back(Mups16Operand::CreateMem(RegNo, Val, StartLoc, EndLoc));
+    return false;
 }
 
 bool Mups16AsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic) {
@@ -486,24 +482,24 @@ bool Mups16AsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic) 
     const MCExpr *Val;
     if (!getParser().parseExpression(Val)) {
       SMLoc EndLoc = getParser().getTok().getLoc();
-      // Try (rN)
+      // Try ($rN)
       if (getLexer().getKind() == AsmToken::LParen) {
-        getLexer().Lex(); // Eat '('
-        SMLoc RegStartLoc;
-        unsigned RegNo = MUPS::NoRegister;
-        if (ParseRegister(RegNo, RegStartLoc, EndLoc))
-          return true;
-        if (getLexer().getKind() != AsmToken::RParen)
-          return true;
-        EndLoc = getParser().getTok().getEndLoc();
-        getLexer().Lex(); // Eat ')'
-        Operands.push_back(Mups16Operand::CreateMem(RegNo, Val, StartLoc, EndLoc));
+          if (parseMemOperand(Operands, Val, StartLoc)) {
+              return true;
+          }
       } else {
         Operands.push_back(Mups16Operand::CreateImm(Val, StartLoc, EndLoc));
       }
       return false;
     }
     return true;
+  }
+  case AsmToken::LParen: {
+    const auto Val = MCConstantExpr::create(0, getContext());
+    if (parseMemOperand(Operands, Val, getParser().getTok().getLoc())) {
+        return true;
+    }
+    break;
   }
   default: {
     LLVM_DEBUG(dbgs() << ".. generic integer expression\n");
@@ -522,7 +518,6 @@ bool Mups16AsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic) 
   return true;
 }
 
-/*
 bool Mups16AsmParser::ParseLiteralValues(unsigned Size, SMLoc L) {
   auto parseOne = [&]() -> bool {
     const MCExpr *Value;
@@ -533,7 +528,6 @@ bool Mups16AsmParser::ParseLiteralValues(unsigned Size, SMLoc L) {
   };
   return (parseMany(parseOne));
 }
-*/
 
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMups16AsmParser() {
   RegisterMCAsmParser<Mups16AsmParser> X(getTheMups16Target());
