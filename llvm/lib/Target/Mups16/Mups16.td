@@ -29,20 +29,20 @@ def Mups16InstrInfo : InstrInfo;
 // Mups16 processors supported.
 //===----------------------------------------------------------------------===//
 
+//===---------------------------------------------------------------------===//
+// Assembly Parsers
+//===---------------------------------------------------------------------===//
+
 def Mups16AsmParser : AsmParser {
-  let ShouldEmitMatchRegisterName = 0;
+  let ShouldEmitMatchRegisterName = 1;
 }
 
-def Mups16AsmParserVariant : AsmParserVariant {
-  int Variant = 0;
-
-  // Recognize hard coded registers.
-  string RegisterPrefix = "$";
-}
+//===----------------------------------------------------------------------===//
+// Target Declaration
+//===----------------------------------------------------------------------===//
 
 def Mups16 : Target {
   let InstructionSet = Mups16InstrInfo;
   let AssemblyParsers = [Mups16AsmParser];
-  let AssemblyParserVariants = [Mups16AsmParserVariant];
   let AllowRegisterRenaming = 1;
 }

@@ -34,13 +34,7 @@ def uimm11 : Operand<i16>
 // OtherVT for a 26-bit immediate, Sparc's sethi uses i32imm for a 22-bit
 // immediate.
 
-// TODO: JAL/JALR clobber RD - how do we encode that?
-
-// Q: Do the following sign-extend their immediate?
-//    JR, LW, SB, SW
-
-// Q: What's the difference between ADD and ADDU?
-
+// TODO: JAL/JALR clobber RA - how do we encode that?
 
 //| Name     | Type | Opcode | Fn |  | Bits                   | Asm Example         | Summary
 //|----------|------|--------|----|--|------------------------|---------------------| -----------
@@ -77,24 +71,24 @@ def JAL   : InstMupsJ<7, (ins uimm11:$imm11),
                       "jal $imm11",
                       [/*TODO*/]>;
 //| JR       | II   | 8      |    |  | `01000 RDD III III II` | `jr    ra, 0      ` | Add 8-bit immediate to `RDD` and jump to result |
-def JR  : InstMupsII1<8, (ins IntReg:$rs1, i8imm:$imm8),
+def JR  : InstMupsII1<8, (ins IntReg:$rs1, imm8:$imm8),
                       "jr  $rs1, $imm8",
                       [/*TODO*/]>;
 //| JALR     | II   | 9      |    |  | `01001 RDD III III II` | `jalr  r1, 0x2    ` | Store `PC` into `RA`, add 8-bit immediate to `RS1` and jump to result |
-def JALR: InstMupsII1<9, (ins IntReg:$rs1, i8imm:$imm8),
+def JALR: InstMupsII1<9, (ins IntReg:$rs1, imm8:$imm8),
                       "jalr $rs1, $imm8",
                       [/*TODO*/]>;
 //| LB       | I    | 10     |    |  | `01010 RDD RS1 III II` | `lb    r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load single byte from resulting memory address into `RDD`, with sign extension of bit 7 |
 def LB  : InstMupsID1<10, (outs IntReg:$rdd), (ins IntReg:$rs1, imm5:$imm5),
-                      "lb $rdd, [$imm5]$rs1",
+                      "lb $rdd, $imm5 ( $rs1 )",
                       [/*TODO*/]>;
 //| LBU      | I    | 11     |    |  | `01011 RDD RS1 III II` | `lbu   r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load single byte from resulting memory address into `RDD`, with top 8 bits set to 0 |
 def LBU : InstMupsID1<11, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
-                      "lb $rdd, [$imm5]$rs1",
+                      "lbu $rdd, [$imm5]$rs1",
                       [/*TODO*/]>;
 //| LW       | I    | 12     |    |  | `01100 RDD RS1 III II` | `lw    r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load two-byte word from resulting memory address into `RDD` |
 def LW  : InstMupsID1<12, (outs IntReg:$rdd), (ins IntReg:$rs1, imm5:$imm5),
-                      "lb $rdd, [$imm5]$rs1",
+                      "lw $rdd, [$imm5]$rs1",
                       [/*TODO*/]>;
 //| LI       | II   | 13     |    |  | `01101 RDD III III II` | `li    r1, 0x7e   ` | Load 8-bit immediate value into `RDD`, with sign-extension of bit 7 |
 def LI  : InstMupsIID<13, (outs IntReg:$rdd), (ins imm8:$imm8),
@@ -124,7 +118,7 @@ def BZ  : InstMupsII1<20, (ins IntReg:$rs1, imm8:$imm8),
                       [/*TODO*/]>;
 //| BNZ      | II   | 21     |    |  | `10101 RS1 III III II` | `bnz   r1, -26    ` | Branch to `PC` plus 8-bit immediate if `RS1` is not zero |
 def BNZ : InstMupsII1<20, (ins IntReg:$rs1, imm8:$imm8),
-                      "bz $rs1, $imm8",
+                      "bnz $rs1, $imm8",
                       [/*TODO*/]>;
 //| _unused_ |      | 22     |    |  | `10110               ` |                     | |
 //| _unused_ |      | 23     |    |  | `10111               ` |                     | |
@@ -132,10 +126,7 @@ def BNZ : InstMupsII1<20, (ins IntReg:$rs1, imm8:$imm8),
 def ADD : InstMupsRD2<24,      0, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
                       "add $rdd, $rs1, $rs2",
                       [(set i16:$rdd, (add i16:$rs1, i16:$rs2))]>;
-//| ADDU     | R    | 24     | 1  |  | `11000 RDD RS1 RS2 01` | `addu  r1, r2, r3 ` | Add `RS1` to `RS2`, store result in `RDD` unsigned |
-def ADDU: InstMupsRD2<24,      1, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "addu $rdd, $rs1, $rs2",
-                      [/*TODO*/]>;
+//| _unused_ |      | 24     | 1  |  | `10111               ` |                     | |
 //| SUB      | R    | 24     | 2  |  | `11000 RDD RS1 RS2 10` | `sub   r1, r2, r3 ` | Subtract `RS2` from `RS1`, store result in `RDD` |
 def SUB : InstMupsRD2<24,      2, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
                       "sub $rdd, $rs1, $rs2",
