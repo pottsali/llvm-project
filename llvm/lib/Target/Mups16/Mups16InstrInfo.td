@@ -24,6 +24,27 @@ def uimm11 : Operand<i16>
     let PrintMethod = "printUImm<11>";
 }
 
+// Memory operand
+def MemAsmOperand : AsmOperandClass {
+  let Name = "Mem";
+}
+
+def memsrc : Operand<i16> {
+  //let PrintMethod = "printSrcMemOperand";
+  let MIOperandInfo = (ops IntReg, imm5);
+  let ParserMatchClass = MemAsmOperand;
+  //let EncoderMethod = "getMemOpValue";
+  //let DecoderMethod = "DecodeMemOperand";
+}
+
+def memdst : Operand<i16> {
+//  let PrintMethod = "printSrcMemOperand";
+  let MIOperandInfo = (ops IntReg, imm5);
+  let ParserMatchClass = MemAsmOperand;
+//  let EncoderMethod = "getMemOpValue";
+//  let DecoderMethod = "DecodeMemOperand";
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Instruction definitions
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,24 +92,24 @@ def JAL   : InstMupsJ<7, (ins uimm11:$imm11),
                       "jal $imm11",
                       [/*TODO*/]>;
 //| JR       | II   | 8      |    |  | `01000 RDD III III II` | `jr    ra, 0      ` | Add 8-bit immediate to `RDD` and jump to result |
-def JR  : InstMupsII1<8, (ins IntReg:$rs1, imm8:$imm8),
-                      "jr  $rs1, $imm8",
+def JR  : InstMupsII1<8, (ins memsrc:$src),
+                      "jr  $src",
                       [/*TODO*/]>;
 //| JALR     | II   | 9      |    |  | `01001 RDD III III II` | `jalr  r1, 0x2    ` | Store `PC` into `RA`, add 8-bit immediate to `RS1` and jump to result |
-def JALR: InstMupsII1<9, (ins IntReg:$rs1, imm8:$imm8),
-                      "jalr $rs1, $imm8",
+def JALR: InstMupsII1<9, (ins memsrc:$src),
+                      "jalr $src",
                       [/*TODO*/]>;
 //| LB       | I    | 10     |    |  | `01010 RDD RS1 III II` | `lb    r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load single byte from resulting memory address into `RDD`, with sign extension of bit 7 |
-def LB  : InstMupsID1<10, (outs IntReg:$rdd), (ins IntReg:$rs1, imm5:$imm5),
-                      "lb $rdd, $imm5 ( $rs1 )",
+def LB  : InstMupsID1<10, (outs IntReg:$rdd), (ins memsrc:$src),
+                      "lb $rdd, $src",
                       [/*TODO*/]>;
 //| LBU      | I    | 11     |    |  | `01011 RDD RS1 III II` | `lbu   r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load single byte from resulting memory address into `RDD`, with top 8 bits set to 0 |
-def LBU : InstMupsID1<11, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
-                      "lbu $rdd, [$imm5]$rs1",
+def LBU : InstMupsID1<11, (outs IntReg:$rdd), (ins memsrc:$src),
+                      "lbu $rdd, $src",
                       [/*TODO*/]>;
 //| LW       | I    | 12     |    |  | `01100 RDD RS1 III II` | `lw    r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load two-byte word from resulting memory address into `RDD` |
-def LW  : InstMupsID1<12, (outs IntReg:$rdd), (ins IntReg:$rs1, imm5:$imm5),
-                      "lw $rdd, [$imm5]$rs1",
+def LW  : InstMupsID1<12, (outs IntReg:$rdd), (ins memsrc:$src),
+                      "lw $rdd, $src",
                       [/*TODO*/]>;
 //| LI       | II   | 13     |    |  | `01101 RDD III III II` | `li    r1, 0x7e   ` | Load 8-bit immediate value into `RDD`, with sign-extension of bit 7 |
 def LI  : InstMupsIID<13, (outs IntReg:$rdd), (ins imm8:$imm8),
@@ -103,12 +124,12 @@ def LUI : InstMupsIID<15, (outs IntReg:$rdd), (ins imm8:$imm8),
                       "lui $rdd, $imm8",
                       [/*TODO*/]>;
 //| SB       | I    | 16     |    |  | `10000 RS1 RS2 III II` | `sb    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store low byte in `RS2` to resulting memory address |
-def SB   : InstMupsI2<16, (ins IntReg:$rs1, IntReg:$rs2, imm5:$imm5),
-                      "sb [$imm5]$rs1, $rs2",
+def SB   : InstMupsI2<16, (ins memdst:$dst, IntReg:$rs2),
+                      "sb $dst, $rs2",
                       [/*TODO*/]>;
 //| SW       | I    | 17     |    |  | `10001 RS1 RS2 III II` | `sw    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store two-byte word `RS2` to resulting memory address |
-def SW   : InstMupsI2<17, (ins IntReg:$rs1, IntReg:$rs2, imm5:$imm5),
-                      "sw [$imm5]$rs1, $rs2",
+def SW   : InstMupsI2<17, (ins memdst:$dst, IntReg:$rs2),
+                      "sw $dst, $rs2",
                       [/*TODO*/]>;
 //| _unused_ |      | 18     |    |  | `10010               ` |                     | |
 //| _unused_ |      | 19     |    |  | `10011               ` |                     | |
