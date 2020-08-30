@@ -88,11 +88,12 @@ class InstMupsII1<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
 // R-type instructions, with one dest register and two source registers. These
 // also have a 2-bit sub-op suffix
 ////////////////////////////////////////////////////////////////////////////////
-class InstMupsR<bits<5> opcode, bits<2> subop, dag outs, dag ins, string asmstr,
+class InstMupsR<bits<5> opcode, bits<2> subopcode, dag outs, dag ins, string asmstr,
                 list<dag> pattern>
     : InstMups<opcode, outs, ins, asmstr, pattern>
 {
   bits<2> subop;
+  let subop = subopcode;
 
   let Inst{10-2} = 0; // Some R-instructions have unused bits, set them to 0
   let Inst{1-0} = subop;

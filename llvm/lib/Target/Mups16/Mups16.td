@@ -28,6 +28,11 @@ def Mups16InstrInfo : InstrInfo;
 //===----------------------------------------------------------------------===//
 // Mups16 processors supported.
 //===----------------------------------------------------------------------===//
+class Proc<string Name, list<SubtargetFeature> Features>
+ : Processor<Name, NoItineraries, Features>;
+
+def : Proc<"generic",         []>;
+def : Proc<"mups16",          []>;
 
 //===---------------------------------------------------------------------===//
 // Assembly Parsers
