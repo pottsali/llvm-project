@@ -21,11 +21,11 @@
 // MSP430 //#include "llvm/MC/MCExpr.h"
 // MSP430 //#include "llvm/MC/MCFixup.h"
 #include "llvm/MC/MCInst.h"
-// MSP430 //#include "llvm/MC/MCInstrInfo.h"
+#include "llvm/MC/MCInstrInfo.h"
 // MSP430 //#include "llvm/MC/MCRegisterInfo.h"
 // MSP430 //#include "llvm/MC/MCSubtargetInfo.h"
-// MSP430 //#include "llvm/Support/Endian.h"
-// MSP430 //#include "llvm/Support/EndianStream.h"
+#include "llvm/Support/Endian.h"
+#include "llvm/Support/EndianStream.h"
 #include "llvm/Support/raw_ostream.h"
 
 #define DEBUG_TYPE "mccodeemitter"
@@ -40,8 +40,8 @@ class Mups16MCCodeEmitter : public MCCodeEmitter {
 // MSP430 //  // inside a particular instruction.
 // MSP430 //  mutable unsigned Offset;
 // MSP430 //
-// MSP430 //  /// TableGen'erated function for getting the binary encoding for an
-// MSP430 //  /// instruction.
+  /// TableGen'erated function for getting the binary encoding for an
+  /// instruction.
   uint64_t getBinaryCodeForInstr(const MCInst &MI,
                                  SmallVectorImpl<MCFixup> &Fixups,
                                  const MCSubtargetInfo &STI) const;
@@ -82,20 +82,20 @@ public:
 void Mups16MCCodeEmitter::encodeInstruction(const MCInst &MI, raw_ostream &OS,
                                             SmallVectorImpl<MCFixup> &Fixups,
                                             const MCSubtargetInfo &STI) const {
-// MSP430 //  const MCInstrDesc &Desc = MCII.get(MI.getOpcode());
-// MSP430 //  // Get byte count of instruction.
-// MSP430 //  unsigned Size = Desc.getSize();
-// MSP430 //
+  const MCInstrDesc &Desc = MCII.get(MI.getOpcode());
+  // Get byte count of instruction.
+  unsigned Size = Desc.getSize();
+
 // MSP430 //  // Initialize fixup offset
 // MSP430 //  Offset = 2;
-// MSP430 //
-// MSP430 //  uint64_t BinaryOpCode = getBinaryCodeForInstr(MI, Fixups, STI);
-// MSP430 //  size_t WordCount = Size / 2;
-// MSP430 //
-// MSP430 //  while (WordCount--) {
-// MSP430 //    support::endian::write(OS, (uint16_t)BinaryOpCode, support::little);
-// MSP430 //    BinaryOpCode >>= 16;
-// MSP430 //  }
+
+  uint64_t BinaryOpCode = getBinaryCodeForInstr(MI, Fixups, STI);
+  size_t WordCount = Size / 2;
+
+  while (WordCount--) {
+    support::endian::write(OS, (uint16_t)BinaryOpCode, support::big);
+    BinaryOpCode >>= 16;
+  }
 }
 
 unsigned Mups16MCCodeEmitter::getMachineOpValue(const MCInst &MI,

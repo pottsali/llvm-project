@@ -19,6 +19,12 @@ using namespace llvm;
 #define GET_REGINFO_MC_DESC
 #include "Mups16GenRegisterInfo.inc"
 
+static MCInstrInfo *createMups16MCInstrInfo() {
+  MCInstrInfo *X = new MCInstrInfo();
+  InitMups16MCInstrInfo(X);
+  return X;
+}
+
 static MCRegisterInfo *createMups16MCRegisterInfo(const Triple &TT) {
   MCRegisterInfo *X = new MCRegisterInfo();
   InitMups16MCRegisterInfo(X, MUPS::RA);
@@ -44,6 +50,7 @@ extern "C" void LLVMInitializeMups16TargetMC()
 {
   Target &T = getTheMups16Target();
   RegisterMCAsmInfo<Mups16MCAsmInfo> X(T);
+  TargetRegistry::RegisterMCInstrInfo(T, createMups16MCInstrInfo);
   TargetRegistry::RegisterMCRegInfo(T, createMups16MCRegisterInfo);
   TargetRegistry::RegisterMCSubtargetInfo(T, createMups16MCSubtargetInfo);
   TargetRegistry::RegisterMCInstPrinter(T, createMups16MCInstPrinter);
