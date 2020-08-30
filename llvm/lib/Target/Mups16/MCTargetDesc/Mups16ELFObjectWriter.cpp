@@ -22,7 +22,7 @@ namespace {
 class Mups16ELFObjectWriter : public MCELFObjectTargetWriter {
 public:
   Mups16ELFObjectWriter(uint8_t OSABI)
-    : MCELFObjectTargetWriter(false, OSABI, ELF::EM_NONE,
+    : MCELFObjectTargetWriter(false, OSABI, ELF::EM_MUPS16,
                               /*HasRelocationAddend*/ true) {}
 
   ~Mups16ELFObjectWriter() override {}
