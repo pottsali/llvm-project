@@ -30,7 +30,7 @@ def MemAsmOperand : AsmOperandClass {
 }
 
 def memsrc : Operand<i16> {
-  //let PrintMethod = "printSrcMemOperand";
+  let PrintMethod = "printMemOperand";
   let MIOperandInfo = (ops IntReg, imm5);
   let ParserMatchClass = MemAsmOperand;
   //let EncoderMethod = "getMemOpValue";
@@ -38,7 +38,7 @@ def memsrc : Operand<i16> {
 }
 
 def memdst : Operand<i16> {
-//  let PrintMethod = "printSrcMemOperand";
+  let PrintMethod = "printMemOperand";
   let MIOperandInfo = (ops IntReg, imm5);
   let ParserMatchClass = MemAsmOperand;
 //  let EncoderMethod = "getMemOpValue";

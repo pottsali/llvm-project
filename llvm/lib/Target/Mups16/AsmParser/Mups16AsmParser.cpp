@@ -215,7 +215,7 @@ public:
   SMLoc getEndLoc() const override { return End; }
 
   void print(raw_ostream &O) const override {
-    auto regName = [](auto Reg) { return "$" + StringRef{Mups16RegStrings+Mups16RegDesc[Reg].Name}.lower(); };
+    auto regName = [](auto Reg) { return "$" + StringRef{Mups16RegStrings+Mups16RegDesc[Reg].Name}; };
     switch (Kind) {
     case k_Tok:
       O << "Token " << Tok;
@@ -296,7 +296,7 @@ OperandMatchResultTy Mups16AsmParser::tryParseRegister(unsigned &RegNo,
   if (NameToken.getKind() != AsmToken::Identifier)
     return MatchOperand_ParseFail;
 
-  auto Name = NameToken.getIdentifier().upper();
+  auto Name = NameToken.getIdentifier();
   RegNo = MatchRegisterName(Name);
 
   if (RegNo == MUPS::NoRegister)
