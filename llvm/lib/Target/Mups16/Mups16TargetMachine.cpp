@@ -34,7 +34,7 @@ static Reloc::Model getEffectiveRelocModel(Optional<Reloc::Model> RM) {
 Mups16TargetMachine::Mups16TargetMachine(const Target &T, const Triple &TT, StringRef CPU, StringRef FS,
     const TargetOptions &Options, Optional<Reloc::Model> RM, Optional<CodeModel::Model> CM,
     CodeGenOpt::Level OL, bool JIT)
-  : LLVMTargetMachine(T, "E-i16:16-p16:16", TT, CPU, FS, Options,
+  : LLVMTargetMachine(T, "E-i16:16-p:16:16", TT, CPU, FS, Options,
                         getEffectiveRelocModel(RM), CodeModel::Small, OL),
       TLOF(std::make_unique<TargetLoweringObjectFileELF>())
 {

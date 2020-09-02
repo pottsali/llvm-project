@@ -24,6 +24,7 @@
 #include "Targets/Le64.h"
 #include "Targets/MSP430.h"
 #include "Targets/Mips.h"
+#include "Targets/Mups16.h"
 #include "Targets/NVPTX.h"
 #include "Targets/OSTargets.h"
 #include "Targets/PNaCl.h"
@@ -302,6 +303,9 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
     default:
       return new MipsTargetInfo(Triple, Opts);
     }
+
+  case llvm::Triple::mups16:
+      return new Mups16TargetInfo(Triple, Opts);
 
   case llvm::Triple::le32:
     switch (os) {
