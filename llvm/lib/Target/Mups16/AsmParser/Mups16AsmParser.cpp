@@ -28,7 +28,7 @@
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/TargetRegistry.h"
 
-#define DEBUG_TYPE "msp430-asm-parser"
+#define DEBUG_TYPE "mups16-asm-parser"
 
 using namespace llvm;
 

@@ -19,34 +19,28 @@ add_public_tablegen_target(Mups16CommonTableGen)
 
 add_llvm_target(Mups16CodeGen
     #Mups16AnalyzeImmediate.cpp
-    #Mups16AsmPrinter.cpp
+    Mups16AsmPrinter.cpp
     #Mups16CallLowering.cpp
     #Mups16CCState.cpp
     #Mups16ConstantIslandPass.cpp
     #Mups16DelaySlotFiller.cpp
     #Mups16ExpandPseudo.cpp
     #Mups16FastISel.cpp
-    #Mups16InstrInfo.cpp
+    Mups16InstrInfo.cpp
     #Mups16InstructionSelector.cpp
     #Mups16ISelDAGToDAG.cpp
-    #Mups16ISelLowering.cpp
+    Mups16ISelLowering.cpp
     Mups16FrameLowering.cpp
     #Mups16LegalizerInfo.cpp
     #Mups16BranchExpansion.cpp
-    #Mups16MCInstLower.cpp
+    Mups16MCInstLower.cpp
     #Mups16MachineFunction.cpp
     #Mups16ModuleISelDAGToDAG.cpp
     #Mups16OptimizePICCall.cpp
-    #Mups16Os16.cpp
     #Mups16PreLegalizerCombiner.cpp
     #Mups16RegisterBankInfo.cpp
     Mups16RegisterInfo.cpp
-    #Mups16SEFrameLowering.cpp
-    #Mups16SEInstrInfo.cpp
-    #Mups16SEISelDAGToDAG.cpp
-    #Mups16SEISelLowering.cpp
-    #Mups16SERegisterInfo.cpp
-    #Mups16Subtarget.cpp
+    Mups16Subtarget.cpp
     Mups16TargetMachine.cpp
     #Mups16TargetObjectFile.cpp
     #MicroMups16SizeReduction.cpp

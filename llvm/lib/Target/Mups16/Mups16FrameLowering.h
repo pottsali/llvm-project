@@ -19,12 +19,29 @@
 namespace llvm {
   class Mups16Subtarget;
 
-class Mups16FrameLowering : public TargetFrameLowering {
+class Mups16FrameLowering : public TargetFrameLowering
+{
 public:
-  explicit Mups16FrameLowering()
-      : TargetFrameLowering(StackGrowsDown, Align(2), 0, Align(2))
-  {
-  }
+    explicit Mups16FrameLowering()
+        : TargetFrameLowering(StackGrowsDown, Align(2), 0, Align(2))
+    {
+    }
+
+    /// emitProlog/emitEpilog - These methods insert prolog and epilog code into
+    /// the function.
+    void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
+    void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
+
+    bool spillCalleeSavedRegisters(MachineBasicBlock &MBB,
+                                    MachineBasicBlock::iterator MI,
+                                    ArrayRef<CalleeSavedInfo> CSI,
+                                    const TargetRegisterInfo *TRI) const override;
+    bool restoreCalleeSavedRegisters(MachineBasicBlock &MBB,
+                                MachineBasicBlock::iterator MI,
+                                MutableArrayRef<CalleeSavedInfo> CSI,
+                                const TargetRegisterInfo *TRI) const override;
+
+    bool hasFP(const MachineFunction &MF) const override;
 };
 
 } // End llvm namespace

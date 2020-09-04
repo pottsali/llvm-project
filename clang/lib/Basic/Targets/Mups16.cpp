@@ -26,6 +26,6 @@ ArrayRef<const char *> Mups16TargetInfo::getGCCRegNames() const {
 
 void Mups16TargetInfo::getTargetDefines(const LangOptions &Opts,
                                         MacroBuilder &Builder) const {
-  Builder.defineMacro("Mups16");
-  Builder.defineMacro("__Mups16__");
+  Builder.defineMacro("MUPS16");
+  Builder.defineMacro("__MUPS16__");
 }

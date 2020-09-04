@@ -13,3 +13,39 @@
 #include "Mups16FrameLowering.h"
 
 using namespace llvm;
+
+
+void Mups16FrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const
+{
+    // FIXME
+}
+
+void Mups16FrameLowering::emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const
+{
+    // FIXME
+}
+
+
+bool Mups16FrameLowering::spillCalleeSavedRegisters(MachineBasicBlock &MBB,
+        MachineBasicBlock::iterator MI,
+        ArrayRef<CalleeSavedInfo> CSI,
+        const TargetRegisterInfo *TRI) const
+{
+    // FIXME
+    return false;
+}
+
+bool Mups16FrameLowering::restoreCalleeSavedRegisters(MachineBasicBlock &MBB,
+        MachineBasicBlock::iterator MI,
+        MutableArrayRef<CalleeSavedInfo> CSI,
+        const TargetRegisterInfo *TRI) const
+{
+    // FIXME
+    return false;
+}
+
+bool Mups16FrameLowering::hasFP(const MachineFunction &MF) const
+{
+    return false;
+}
+

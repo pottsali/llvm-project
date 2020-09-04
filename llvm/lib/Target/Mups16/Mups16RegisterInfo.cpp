@@ -37,13 +37,11 @@ Mups16RegisterInfo::Mups16RegisterInfo()
 
 const MCPhysReg* Mups16RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const
 {
-    return CSR_SaveList;
-}
-
-const uint32_t* Mups16RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
-                                        CallingConv::ID CC) const
-{
-    return CSR_RegMask;
+    static const MCPhysReg CalleeSavedRegs[] = {
+        MUPS::R1, MUPS::R2, MUPS::R3, MUPS::R4, MUPS::RA,
+        0
+    };
+    return CalleeSavedRegs;
 }
 
 BitVector Mups16RegisterInfo::getReservedRegs(const MachineFunction &MF) const

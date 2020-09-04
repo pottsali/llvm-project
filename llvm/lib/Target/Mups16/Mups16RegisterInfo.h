@@ -20,11 +20,6 @@ struct Mups16RegisterInfo : public Mups16GenRegisterInfo {
 
   /// Code Generation virtual methods...
   const MCPhysReg *getCalleeSavedRegs(const MachineFunction *MF) const override;
-  const uint32_t *getCallPreservedMask(const MachineFunction &MF,
-                                       CallingConv::ID CC) const override;
-
-  const uint32_t* getRTCallPreservedMask(CallingConv::ID CC) const;
-
   BitVector getReservedRegs(const MachineFunction &MF) const override;
 
   const TargetRegisterClass *getPointerRegClass(const MachineFunction &MF,

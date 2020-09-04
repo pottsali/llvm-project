@@ -7,9 +7,7 @@
 #ifndef LLVM_LIB_TARGET_MUPS16_MIPSTARGETMACHINE_H
 #define LLVM_LIB_TARGET_MUPS16_MIPSTARGETMACHINE_H
 
-#include "llvm/ADT/Optional.h"
-#include "llvm/ADT/StringMap.h"
-#include "llvm/ADT/StringRef.h"
+#include "Mups16Subtarget.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Target/TargetMachine.h"
 #include <memory>
@@ -20,6 +18,7 @@ namespace llvm
 class Mups16TargetMachine : public LLVMTargetMachine
 {
     std::unique_ptr<TargetLoweringObjectFile> TLOF;
+    Mups16Subtarget Subtarget;
 public:
     Mups16TargetMachine(const Target &T, const Triple &TT, StringRef CPU,
             StringRef FS, const TargetOptions &Options,
@@ -28,6 +27,10 @@ public:
     ~Mups16TargetMachine() override;
 
     //TargetTransformInfo getTargetTransformInfo(const Function &F) override;
+    const Mups16Subtarget *getSubtargetImpl(const Function &F) const override
+    {
+        return &Subtarget;
+    }
 
     // Pass Pipeline Configuration
     TargetPassConfig *createPassConfig(PassManagerBase &PM) override;

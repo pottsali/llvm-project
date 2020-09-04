@@ -46,7 +46,7 @@ public:
     IntMaxType = SignedLongLong;
     IntPtrType = SignedInt;
     PtrDiffType = SignedInt;
-    SigAtomicType = SignedLong;
+    SigAtomicType = SignedInt;
     resetDataLayout("E-i16:16-p:16:16");
   }
   void getTargetDefines(const LangOptions &Opts, MacroBuilder &Builder) const override;

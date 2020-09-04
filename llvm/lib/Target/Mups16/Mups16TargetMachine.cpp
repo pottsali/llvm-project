@@ -24,10 +24,11 @@ extern "C" void LLVMInitializeMups16Target() {
   RegisterTargetMachine<Mups16TargetMachine> X(getTheMups16Target());
 }
 
-static Reloc::Model getEffectiveRelocModel(Optional<Reloc::Model> RM) {
-  if (!RM.hasValue())
-    return Reloc::Static;
-  return *RM;
+static Reloc::Model getEffectiveRelocModel(Optional<Reloc::Model> RM)
+{
+    if (!RM.hasValue())
+        return Reloc::Static;
+    return *RM;
 }
 
 /// Create an ILP32 architecture model
@@ -36,7 +37,8 @@ Mups16TargetMachine::Mups16TargetMachine(const Target &T, const Triple &TT, Stri
     CodeGenOpt::Level OL, bool JIT)
   : LLVMTargetMachine(T, "E-i16:16-p:16:16", TT, CPU, FS, Options,
                         getEffectiveRelocModel(RM), CodeModel::Small, OL),
-      TLOF(std::make_unique<TargetLoweringObjectFileELF>())
+      TLOF(std::make_unique<TargetLoweringObjectFileELF>()),
+      Subtarget(TT, std::string(CPU), std::string(FS), *this)
 {
     initAsmInfo();
 }
@@ -67,7 +69,7 @@ TargetPassConfig *Mups16TargetMachine::createPassConfig(PassManagerBase &PM) {
 
 void Mups16PassConfig::addIRPasses()
 {
-    addPass(createAtomicExpandPass());
+    //addPass(createAtomicExpandPass());
     TargetPassConfig::addIRPasses();
 }
 
