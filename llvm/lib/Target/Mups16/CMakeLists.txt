@@ -28,7 +28,7 @@ add_llvm_target(Mups16CodeGen
     #Mups16FastISel.cpp
     Mups16InstrInfo.cpp
     #Mups16InstructionSelector.cpp
-    #Mups16ISelDAGToDAG.cpp
+    Mups16ISelDAGToDAG.cpp
     Mups16ISelLowering.cpp
     Mups16FrameLowering.cpp
     #Mups16LegalizerInfo.cpp

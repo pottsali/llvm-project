@@ -5,16 +5,16 @@ include "Mups16InstrFormats.td"
 ////////////////////////////////////////////////////////////////////////////////
 
 // Signed immediate values
-def imm5 : Operand<i8>;
-def imm8 : Operand<i8>;
+def imm5 : Operand<i16>;
+def imm8 : Operand<i16>;
 
 // Unsigned immediate values
-def uimm5 : Operand<i8>
+def uimm5 : Operand<i16>
 {
     let PrintMethod = "printUImm<5>";
 }
 
-def uimm8 : Operand<i8>
+def uimm8 : Operand<i16>
 {
     let PrintMethod = "printUImm<8>";
 }
@@ -62,7 +62,7 @@ def memdst : Operand<i16> {
 //| ADDI     | I    | 0      |    |  | `00000 RDD RS1 III II` | `addi  sp, sp, -4 ` | Add 5-bit immediate to `RS1`, store in `RDD` |
 def ADDI  : InstMupsI<0, (outs IntReg:$rdd), (ins IntReg:$rs1, imm5:$imm5),
                       "addi $rdd, $rs1, $imm5",
-                      [/*TODO(set i16:$rdd, (add i16:$rs1, i8:$imm5))*/]>;
+                      [(set i16:$rdd, (add i16:$rs1, i16:$imm5))]>;
 //| ADDIU    | I    | 1      |    |  | `00001 RDD RS1 III II` | `addiu sp, sp, 18 ` | Add 5-bit unsigned immediate to `RS1`, store in `RDD` |
 def ADDIU : InstMupsI<1, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
                       "addiu $rdd, $rs1, $imm5",
@@ -114,6 +114,7 @@ def LW  : InstMupsID1<12, (outs IntReg:$rdd), (ins memsrc:$src),
 //| LI       | II   | 13     |    |  | `01101 RDD III III II` | `li    r1, 0x7e   ` | Load 8-bit immediate value into `RDD`, with sign-extension of bit 7 |
 def LI  : InstMupsIID<13, (outs IntReg:$rdd), (ins imm8:$imm8),
                       "li $rdd, $imm8",
+                      //[(set i16:$rdd, imm8:$imm8)]>;
                       [/*TODO*/]>;
 //| LIU      | II   | 14     |    |  | `01110 RDD III III II` | `liu   r1, 0xff   ` | Load 8-bit immediate value into `RDD`, with top 8 bits set to 0 |
 def LIU : InstMupsIID<14, (outs IntReg:$rdd), (ins uimm8:$imm8),
@@ -151,7 +152,7 @@ def ADD : InstMupsRD2<24,      0, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntReg
 //| SUB      | R    | 24     | 2  |  | `11000 RDD RS1 RS2 10` | `sub   r1, r2, r3 ` | Subtract `RS2` from `RS1`, store result in `RDD` |
 def SUB : InstMupsRD2<24,      2, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
                       "sub $rdd, $rs1, $rs2",
-                      [/*TODO*/]>;
+                      [(set i16:$rdd, (sub i16:$rs1, i16:$rs2))]>;
 //| SUBU     | R    | 24     | 3  |  | `11000 RDD RS1 RS2 11` | `subu  r1, r2, r3 ` | Subtract `RS2` from `RS1`, store result in `RDD`, unsgigned |
 def SUBU: InstMupsRD2<24,      3, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
                       "subu $rdd, $rs1, $rs2",

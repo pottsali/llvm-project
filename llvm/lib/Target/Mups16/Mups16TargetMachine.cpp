@@ -75,7 +75,7 @@ void Mups16PassConfig::addIRPasses()
 
 bool Mups16PassConfig::addInstSelector()
 {
-    //addPass(createMups16ISelDag(getMups16TargetMachine()));
+    addPass(createMups16ISelDag(getMups16TargetMachine(), getOptLevel()));
     return false;
 }
 

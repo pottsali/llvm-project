@@ -66,6 +66,7 @@ namespace llvm {
                            const SmallVectorImpl<ISD::InputArg> &Ins,
                            const SDLoc &dl, SelectionDAG &DAG,
                            SmallVectorImpl<SDValue> &InVals) const;
+                           */
 
     SDValue LowerCCCArguments(SDValue Chain, CallingConv::ID CallConv,
                               bool isVarArg,
@@ -73,6 +74,7 @@ namespace llvm {
                               const SDLoc &dl, SelectionDAG &DAG,
                               SmallVectorImpl<SDValue> &InVals) const;
 
+    /*
     SDValue LowerCallResult(SDValue Chain, SDValue InFlag,
                             CallingConv::ID CallConv, bool isVarArg,
                             const SmallVectorImpl<ISD::InputArg> &Ins,
@@ -81,15 +83,15 @@ namespace llvm {
 
     */
 
-    /*
-     * FIXME: these are required
+    SDValue LowerCall(TargetLowering::CallLoweringInfo &CLI,
+                SmallVectorImpl<SDValue> &InVals) const override;
     SDValue LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
                          const SmallVectorImpl<ISD::InputArg> &Ins,
                          const SDLoc &dl, SelectionDAG &DAG,
                          SmallVectorImpl<SDValue> &InVals) const override;
-    SDValue LowerCall(TargetLowering::CallLoweringInfo &CLI,
-                SmallVectorImpl<SDValue> &InVals) const override;
 
+    /*
+     * FIXME: these are required
     bool CanLowerReturn(CallingConv::ID CallConv,
                         MachineFunction &MF,
                         bool IsVarArg,

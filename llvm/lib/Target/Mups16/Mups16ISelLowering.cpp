@@ -65,7 +65,7 @@ Mups16TargetLowering::Mups16TargetLowering(const TargetMachine &TM,
   }
 
   // We don't have any truncstores
-  setTruncStoreAction(MVT::i16, MVT::i8, Expand);
+  //setTruncStoreAction(MVT::i16, MVT::i8, Expand);
 
   setOperationAction(ISD::SRA,              MVT::i8,    Promote);
   setOperationAction(ISD::SHL,              MVT::i8,    Promote);
@@ -323,4 +323,284 @@ bool Mups16TargetLowering::isZExtFree(SDValue Val, EVT VT2) const {
 //===----------------------------------------------------------------------===//
 //  Other Lowering Code
 //===----------------------------------------------------------------------===//
+SDValue Mups16TargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
+                SmallVectorImpl<SDValue> &InVals) const
+{
+    SelectionDAG &DAG                     = CLI.DAG;
+    SDLoc &dl                             = CLI.DL;
+    SmallVectorImpl<ISD::OutputArg> &Outs = CLI.Outs;
+    SmallVectorImpl<SDValue> &OutVals     = CLI.OutVals;
+    SmallVectorImpl<ISD::InputArg> &Ins   = CLI.Ins;
+    SDValue Chain                         = CLI.Chain;
+    SDValue Callee                        = CLI.Callee;
+    bool &isTailCall                      = CLI.IsTailCall;
+    CallingConv::ID CallConv              = CLI.CallConv;
+    bool isVarArg                         = CLI.IsVarArg;
 
+    // MSP430 target does not yet support tail call optimization.
+    isTailCall = false;
+
+    switch (CallConv) {
+        case CallingConv::Fast:
+        case CallingConv::C:
+            //return LowerCCCCallTo(Chain, Callee, CallConv, isVarArg, isTailCall,
+            //        Outs, OutVals, Ins, dl, DAG, InVals);
+        default:
+            report_fatal_error("Unsupported calling convention");
+    }
+}
+
+/*
+SDValue Mups16TargetLowering::LowerCCCCallTo(
+    SDValue Chain, SDValue Callee, CallingConv::ID CallConv, bool isVarArg,
+    bool isTailCall, const SmallVectorImpl<ISD::OutputArg> &Outs,
+    const SmallVectorImpl<SDValue> &OutVals,
+    const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &dl,
+    SelectionDAG &DAG, SmallVectorImpl<SDValue> &InVals) const
+{
+    // Analyze operands of the call, assigning locations to each operand.
+    SmallVector<CCValAssign, 16> ArgLocs;
+    CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), ArgLocs,
+            *DAG.getContext());
+    AnalyzeArguments(CCInfo, ArgLocs, Outs);
+
+    // Get a count of how many bytes are to be pushed on the stack.
+    unsigned NumBytes = CCInfo.getNextStackOffset();
+    auto PtrVT = getPointerTy(DAG.getDataLayout());
+
+    Chain = DAG.getCALLSEQ_START(Chain, NumBytes, 0, dl);
+
+    SmallVector<std::pair<unsigned, SDValue>, 4> RegsToPass;
+    SmallVector<SDValue, 12> MemOpChains;
+    SDValue StackPtr;
+
+    // Walk the register/memloc assignments, inserting copies/loads.
+    for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
+        CCValAssign &VA = ArgLocs[i];
+
+        SDValue Arg = OutVals[i];
+
+        // Promote the value if needed.
+        switch (VA.getLocInfo()) {
+            default: llvm_unreachable("Unknown loc info!");
+            case CCValAssign::Full: break;
+            case CCValAssign::SExt:
+                                    Arg = DAG.getNode(ISD::SIGN_EXTEND, dl, VA.getLocVT(), Arg);
+                                    break;
+            case CCValAssign::ZExt:
+                                    Arg = DAG.getNode(ISD::ZERO_EXTEND, dl, VA.getLocVT(), Arg);
+                                    break;
+            case CCValAssign::AExt:
+                                    Arg = DAG.getNode(ISD::ANY_EXTEND, dl, VA.getLocVT(), Arg);
+                                    break;
+        }
+
+        // Arguments that can be passed on register must be kept at RegsToPass
+        // vector
+        if (VA.isRegLoc()) {
+            RegsToPass.push_back(std::make_pair(VA.getLocReg(), Arg));
+        } else {
+            assert(VA.isMemLoc());
+
+            if (!StackPtr.getNode())
+                StackPtr = DAG.getCopyFromReg(Chain, dl, MSP430::SP, PtrVT);
+
+            SDValue PtrOff =
+                DAG.getNode(ISD::ADD, dl, PtrVT, StackPtr,
+                        DAG.getIntPtrConstant(VA.getLocMemOffset(), dl));
+
+            SDValue MemOp;
+            ISD::ArgFlagsTy Flags = Outs[i].Flags;
+
+            if (Flags.isByVal()) {
+                SDValue SizeNode = DAG.getConstant(Flags.getByValSize(), dl, MVT::i16);
+                MemOp = DAG.getMemcpy(
+                        Chain, dl, PtrOff, Arg, SizeNode, Flags.getNonZeroByValAlign(),
+                        false, //isVolatile
+                        true,  //AlwaysInline
+                        false, //isTailCall
+                        MachinePointerInfo(), MachinePointerInfo());
+            } else {
+                MemOp = DAG.getStore(Chain, dl, Arg, PtrOff, MachinePointerInfo());
+            }
+
+            MemOpChains.push_back(MemOp);
+        }
+    }
+
+    // Transform all store nodes into one single node because all store nodes are
+    // independent of each other.
+    if (!MemOpChains.empty())
+        Chain = DAG.getNode(ISD::TokenFactor, dl, MVT::Other, MemOpChains);
+
+    // Build a sequence of copy-to-reg nodes chained together with token chain and
+    // flag operands which copy the outgoing args into registers.  The InFlag in
+    // necessary since all emitted instructions must be stuck together.
+    SDValue InFlag;
+    for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i) {
+        Chain = DAG.getCopyToReg(Chain, dl, RegsToPass[i].first,
+                RegsToPass[i].second, InFlag);
+        InFlag = Chain.getValue(1);
+    }
+
+    // If the callee is a GlobalAddress node (quite common, every direct call is)
+    // turn it into a TargetGlobalAddress node so that legalize doesn't hack it.
+    // Likewise ExternalSymbol -> TargetExternalSymbol.
+    if (GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee))
+        Callee = DAG.getTargetGlobalAddress(G->getGlobal(), dl, MVT::i16);
+    else if (ExternalSymbolSDNode *E = dyn_cast<ExternalSymbolSDNode>(Callee))
+        Callee = DAG.getTargetExternalSymbol(E->getSymbol(), MVT::i16);
+
+    // Returns a chain & a flag for retval copy to use.
+    SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
+    SmallVector<SDValue, 8> Ops;
+    Ops.push_back(Chain);
+    Ops.push_back(Callee);
+
+    // Add argument registers to the end of the list so that they are
+    // known live into the call.
+    for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i)
+        Ops.push_back(DAG.getRegister(RegsToPass[i].first,
+                    RegsToPass[i].second.getValueType()));
+
+    if (InFlag.getNode())
+        Ops.push_back(InFlag);
+
+    Chain = DAG.getNode(MSP430ISD::CALL, dl, NodeTys, Ops);
+    InFlag = Chain.getValue(1);
+
+    // Create the CALLSEQ_END node.
+    Chain = DAG.getCALLSEQ_END(Chain, DAG.getConstant(NumBytes, dl, PtrVT, true),
+            DAG.getConstant(0, dl, PtrVT, true), InFlag, dl);
+    InFlag = Chain.getValue(1);
+
+    // Handle result values, copying them out of physregs into vregs that we
+    // return.
+    return LowerCallResult(Chain, InFlag, CallConv, isVarArg, Ins, dl,
+            DAG, InVals);
+}
+*/
+
+
+SDValue Mups16TargetLowering::LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
+        const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &dl, SelectionDAG &DAG,
+        SmallVectorImpl<SDValue> &InVals) const
+{
+    switch (CallConv)
+    {
+        case CallingConv::C:
+        case CallingConv::Fast:
+            return LowerCCCArguments(Chain, CallConv, isVarArg, Ins, dl, DAG, InVals);
+        default:
+            report_fatal_error("Unsupported calling convention");
+    }
+}
+
+// Generate instructions to load incoming arguments from the stack
+SDValue Mups16TargetLowering::LowerCCCArguments(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
+    const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &dl, SelectionDAG &DAG, 
+    SmallVectorImpl<SDValue> &InVals) const
+{
+    MachineFunction &MF = DAG.getMachineFunction();
+    MachineFrameInfo &MFI = MF.getFrameInfo();
+    MachineRegisterInfo &RegInfo = MF.getRegInfo();
+    //auto *FuncInfo = MF.getInfo<MachineFunctionInfo>();
+
+    // Assign locations to all of the incoming arguments.
+    SmallVector<CCValAssign, 16> ArgLocs;
+    CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), ArgLocs, *DAG.getContext());
+    CCInfo.AnalyzeFormalArguments(Ins, CC_Mups16);
+
+    // Create frame index for the start of the first vararg value
+    // TODO: varargs
+    /*
+    if (isVarArg)
+    {
+        unsigned Offset = CCInfo.getNextStackOffset();
+        FuncInfo->setVarArgsFrameIndex(MFI.CreateFixedObject(1, Offset, true));
+    }
+    */
+
+    for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i)
+    {
+        CCValAssign &VA = ArgLocs[i];
+        if (VA.isRegLoc())
+        {
+            // Arguments passed in registers
+            EVT RegVT = VA.getLocVT();
+            switch (RegVT.getSimpleVT().SimpleTy)
+            {
+                case MVT::i16:
+                {
+                    Register VReg = RegInfo.createVirtualRegister(&MUPS::IntRegsRegClass);
+                    RegInfo.addLiveIn(VA.getLocReg(), VReg);
+                    SDValue ArgValue = DAG.getCopyFromReg(Chain, dl, VReg, RegVT);
+
+                    // If this is an 8-bit value, it is really passed promoted to 16
+                    // bits. Insert an assert[sz]ext to capture this, then truncate to the
+                    // right size.
+                    if (VA.getLocInfo() == CCValAssign::SExt)
+                        ArgValue = DAG.getNode(ISD::AssertSext, dl, RegVT, ArgValue, DAG.getValueType(VA.getValVT()));
+                    else if (VA.getLocInfo() == CCValAssign::ZExt)
+                        ArgValue = DAG.getNode(ISD::AssertZext, dl, RegVT, ArgValue, DAG.getValueType(VA.getValVT()));
+
+                    if (VA.getLocInfo() != CCValAssign::Full)
+                        ArgValue = DAG.getNode(ISD::TRUNCATE, dl, VA.getValVT(), ArgValue);
+
+                    InVals.push_back(ArgValue);
+                    break;
+                }
+                default:
+                {
+#ifndef NDEBUG
+                    errs() << "LowerFormalArguments Unhandled argument type: "
+                        << RegVT.getEVTString() << "\n";
+#endif
+                    llvm_unreachable(nullptr);
+                }
+            }
+        }
+        else
+        {
+            // Sanity check
+            assert(VA.isMemLoc());
+
+            SDValue InVal;
+            ISD::ArgFlagsTy Flags = Ins[i].Flags;
+
+            if (Flags.isByVal())
+            {
+                int FI = MFI.CreateFixedObject(Flags.getByValSize(),
+                        VA.getLocMemOffset(), true);
+                InVal = DAG.getFrameIndex(FI, getPointerTy(DAG.getDataLayout()));
+            }
+            else
+            {
+                // Load the argument to a virtual register
+                unsigned ObjSize = VA.getLocVT().getSizeInBits()/8;
+                if (ObjSize > 2)
+                {
+                    errs() << "LowerFormalArguments Unhandled argument type: "
+                        << EVT(VA.getLocVT()).getEVTString()
+                        << "\n";
+                }
+                // Create the frame index object for this incoming parameter...
+                int FI = MFI.CreateFixedObject(ObjSize, VA.getLocMemOffset(), true);
+
+                // Create the SelectionDAG nodes corresponding to a load
+                //from this parameter
+                SDValue FIN = DAG.getFrameIndex(FI, MVT::i16);
+                InVal = DAG.getLoad(
+                        VA.getLocVT(), dl, Chain, FIN,
+                        MachinePointerInfo::getFixedStack(DAG.getMachineFunction(), FI));
+            }
+
+            InVals.push_back(InVal);
+        }
+    }
+
+    // TODO: struct returns (isSRet() == true)?
+
+    return Chain;
+
+}

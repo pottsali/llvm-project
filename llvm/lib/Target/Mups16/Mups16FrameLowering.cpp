@@ -18,11 +18,13 @@ using namespace llvm;
 void Mups16FrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const
 {
     // FIXME
+    report_fatal_error("emitPrologue");
 }
 
 void Mups16FrameLowering::emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const
 {
     // FIXME
+    report_fatal_error("emitEpilogue");
 }
 
 
