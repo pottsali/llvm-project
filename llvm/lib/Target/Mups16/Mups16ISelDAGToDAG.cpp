@@ -53,6 +53,9 @@ namespace
 
         // Main method to transform nodes into machine nodes.
         void Select(SDNode *N) override;
+
+        // Transform an address into a pair of nodes (base and offset)
+        bool selectAddr(SDValue Addr, SDValue &Base, SDValue &Offset);
     };
 }  // end anonymous namespace
 
@@ -78,3 +81,45 @@ void Mups16DAGToDAGISel::Select(SDNode *Node)
     // Select the default instruction
     SelectCode(Node);
 }
+
+
+bool Mups16DAGToDAGISel::selectAddr(SDValue Addr, SDValue &Base, SDValue &Offset)
+{
+    EVT ValTy = Addr.getValueType();
+    
+    // if Address is frame index, get the TargetFrameIndex.
+    // FIXME: does this even make sense for Mups16?
+    if (FrameIndexSDNode *FIN = dyn_cast<FrameIndexSDNode>(Addr))
+    {
+        Base   = CurDAG->getTargetFrameIndex(FIN->getIndex(), ValTy);
+        Offset = CurDAG->getTargetConstant(0, SDLoc(Addr), ValTy);
+        return true;
+    }
+
+    // Addresses of the form offset(base)
+    if (CurDAG->isBaseWithConstantOffset(Addr))
+    {
+        ConstantSDNode *CN = dyn_cast<ConstantSDNode>(Addr.getOperand(1));
+        if (isInt<5>(CN->getSExtValue())) {
+
+            // If the first operand is a FI, get the TargetFI Node
+            if (FrameIndexSDNode *FIN = dyn_cast<FrameIndexSDNode>
+                    (Addr.getOperand(0)))
+                Base = CurDAG->getTargetFrameIndex(FIN->getIndex(), ValTy);
+            else
+                Base = Addr.getOperand(0);
+
+            Offset = CurDAG->getTargetConstant(CN->getZExtValue(), SDLoc(Addr), ValTy);
+            return true;
+        }
+    }
+
+    // Base case is just a plain address with no offset
+    Base   = Addr;
+    Offset = CurDAG->getTargetConstant(0, SDLoc(Addr), ValTy);
+    return true;
+}
+
+
+
+

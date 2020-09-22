@@ -41,6 +41,9 @@ namespace llvm {
     getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
                                  StringRef Constraint, MVT VT) const override;
 
+
+    SDValue LowerOperation(SDValue Op, SelectionDAG &DAG) const override;
+
     /// isZExtFree - Return true if any actual instruction that defines a value
     /// of type Ty1 implicit zero-extends the value to Ty2 in the result
     /// register. This does not necessarily include registers defined in unknown

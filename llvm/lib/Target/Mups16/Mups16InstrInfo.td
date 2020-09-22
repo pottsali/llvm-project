@@ -45,6 +45,42 @@ def memdst : Operand<i16> {
 //  let DecoderMethod = "DecodeMemOperand";
 }
 
+// Jump and branch operands
+def Mups16JumpTargetAsmOperand : AsmOperandClass {
+  let Name = "JumpTarget";
+  //let ParserMethod = "parseJumpTarget";
+  let PredicateMethod = "isImm";
+  let RenderMethod = "addImmOperands";
+}
+
+def brtarget    : Operand<OtherVT> {
+  let EncoderMethod = "getBranchTargetOpValue";
+  let OperandType = "OPERAND_PCREL";
+  let DecoderMethod = "DecodeBranchTarget";
+  let ParserMatchClass = Mups16JumpTargetAsmOperand;
+}
+
+// Pattern fragments for loads and stores
+class AlignedLoad<PatFrag Node> :
+  PatFrag<(ops node:$ptr), (Node node:$ptr), [{
+  LoadSDNode *LD = cast<LoadSDNode>(N);
+  return LD->getMemoryVT().getSizeInBits()/8 <= LD->getAlignment();
+}]>;
+
+class AlignedStore<PatFrag Node> :
+  PatFrag<(ops node:$val, node:$ptr), (Node node:$val, node:$ptr), [{
+  StoreSDNode *SD = cast<StoreSDNode>(N);
+  return SD->getMemoryVT().getSizeInBits()/8 <= SD->getAlignment();
+}]>;
+
+// Could probably simplify this down if we only have one instantiation of the AlignedLoad and
+// AlignedStore classes. We'll see.
+def load_a          : AlignedLoad<load>;
+def store_a         : AlignedStore<store>;
+
+// Leaf pattern for matching memory addresses
+def addr: ComplexPattern<iPTR, 2, "selectAddr", [frameindex]>;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Instruction definitions
 ////////////////////////////////////////////////////////////////////////////////
@@ -84,9 +120,9 @@ def NORI  : InstMupsI<5, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
                       "nori $rdd, $rs1, $imm5",
                       [/*TODO*/]>;
 //| J        | J    | 6      |    |  | `00110 III III III II` | `j     0x07fe     ` | Unconditional jump to 11-bit immediate address (top 5 bits of destination come from existing `PC`) |
-def J     : InstMupsJ<6, (ins uimm11:$imm11),
+def J     : InstMupsJ<6, (ins brtarget:$imm11),
                       "j $imm11",
-                      [/*TODO*/]>;
+                      [(br bb:$imm11)]>;
 //| JAL      | J    | 7      |    |  | `00111 III III III II` | `jal   0x07fe     ` | Store `PC` into `RA` and jump to 11-bit immediate address (top 5 bits of destination come from existing `PC`) |
 def JAL   : InstMupsJ<7, (ins uimm11:$imm11),
                       "jal $imm11",
@@ -102,20 +138,19 @@ def JALR: InstMupsII1<9, (ins memsrc:$src),
 //| LB       | I    | 10     |    |  | `01010 RDD RS1 III II` | `lb    r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load single byte from resulting memory address into `RDD`, with sign extension of bit 7 |
 def LB  : InstMupsID1<10, (outs IntReg:$rdd), (ins memsrc:$src),
                       "lb $rdd, $src",
-                      [/*TODO*/]>;
+                      [(set IntReg:$rdd, (sextloadi8 addr:$src))]>;
 //| LBU      | I    | 11     |    |  | `01011 RDD RS1 III II` | `lbu   r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load single byte from resulting memory address into `RDD`, with top 8 bits set to 0 |
 def LBU : InstMupsID1<11, (outs IntReg:$rdd), (ins memsrc:$src),
                       "lbu $rdd, $src",
-                      [/*TODO*/]>;
+                      [(set IntReg:$rdd, (zextloadi8 addr:$src))]>;
 //| LW       | I    | 12     |    |  | `01100 RDD RS1 III II` | `lw    r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load two-byte word from resulting memory address into `RDD` |
 def LW  : InstMupsID1<12, (outs IntReg:$rdd), (ins memsrc:$src),
                       "lw $rdd, $src",
-                      [/*TODO*/]>;
+                      [(set IntReg:$rdd, (load_a addr:$src))]>;
 //| LI       | II   | 13     |    |  | `01101 RDD III III II` | `li    r1, 0x7e   ` | Load 8-bit immediate value into `RDD`, with sign-extension of bit 7 |
 def LI  : InstMupsIID<13, (outs IntReg:$rdd), (ins imm8:$imm8),
                       "li $rdd, $imm8",
-                      //[(set i16:$rdd, imm8:$imm8)]>;
-                      [/*TODO*/]>;
+                      [(set IntReg:$rdd, i16:$imm8)]>;
 //| LIU      | II   | 14     |    |  | `01110 RDD III III II` | `liu   r1, 0xff   ` | Load 8-bit immediate value into `RDD`, with top 8 bits set to 0 |
 def LIU : InstMupsIID<14, (outs IntReg:$rdd), (ins uimm8:$imm8),
                       "li $rdd, $imm8",
@@ -127,27 +162,32 @@ def LUI : InstMupsIID<15, (outs IntReg:$rdd), (ins imm8:$imm8),
 //| SB       | I    | 16     |    |  | `10000 RS1 RS2 III II` | `sb    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store low byte in `RS2` to resulting memory address |
 def SB   : InstMupsI2<16, (ins memdst:$dst, IntReg:$rs2),
                       "sb $dst, $rs2",
-                      [/*TODO*/]>;
+                      [(truncstorei8 IntReg:$rs2, addr:$dst)]>;
 //| SW       | I    | 17     |    |  | `10001 RS1 RS2 III II` | `sw    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store two-byte word `RS2` to resulting memory address |
 def SW   : InstMupsI2<17, (ins memdst:$dst, IntReg:$rs2),
                       "sw $dst, $rs2",
-                      [/*TODO*/]>;
+                      [(store_a IntReg:$rs2, addr:$dst)]>;
 //| _unused_ |      | 18     |    |  | `10010               ` |                     | |
 //| _unused_ |      | 19     |    |  | `10011               ` |                     | |
+
 //| BZ       | II   | 20     |    |  | `10100 RS1 III III II` | `bz    r1, -26    ` | Branch to `PC` plus 8-bit immediate if `RS1` is zero |
-def BZ  : InstMupsII1<20, (ins IntReg:$rs1, imm8:$imm8),
-                      "bz $rs1, $imm8",
-                      [/*TODO*/]>;
+def BZ  : InstMupsII1<20, (ins IntReg:$rs1, brtarget:$offset),
+                      "bz $rs1, $offset",
+                      [(brcond (i16 (seteq IntReg:$rs1, 0)), bb:$offset)]>;
+
 //| BNZ      | II   | 21     |    |  | `10101 RS1 III III II` | `bnz   r1, -26    ` | Branch to `PC` plus 8-bit immediate if `RS1` is not zero |
-def BNZ : InstMupsII1<20, (ins IntReg:$rs1, imm8:$imm8),
-                      "bnz $rs1, $imm8",
-                      [/*TODO*/]>;
+def BNZ : InstMupsII1<20, (ins IntReg:$rs1, brtarget:$offset),
+                      "bnz $rs1, $offset",
+                      [(brcond (i16 (setne IntReg:$rs1, 0)), bb:$offset)]>;
+
 //| _unused_ |      | 22     |    |  | `10110               ` |                     | |
 //| _unused_ |      | 23     |    |  | `10111               ` |                     | |
+
 //| ADD      | R    | 24     | 0  |  | `11000 RDD RS1 RS2 00` | `add   r1, r2, r3 ` | Add `RS1` to `RS2`, store result in `RDD` |
 def ADD : InstMupsRD2<24,      0, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
                       "add $rdd, $rs1, $rs2",
                       [(set i16:$rdd, (add i16:$rs1, i16:$rs2))]>;
+
 //| _unused_ |      | 24     | 1  |  | `10111               ` |                     | |
 //| SUB      | R    | 24     | 2  |  | `11000 RDD RS1 RS2 10` | `sub   r1, r2, r3 ` | Subtract `RS2` from `RS1`, store result in `RDD` |
 def SUB : InstMupsRD2<24,      2, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
@@ -189,19 +229,19 @@ def SRA : InstMupsRD2<26,      2, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntReg
 //| SEQ      | R    | 27     | 0  |  | `11011 RDD RS1 RS2 00` | `seq   r1, r2, r3 ` | Set `RDD` to 1 if `RS1 == RS2`, 0 otherwise |
 def SEQ : InstMupsRD2<27,      0, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
                       "seq $rdd, $rs1, $rs2",
-                      [/*TODO*/]>;
+                      [(set IntRegs:$rdd, (seteq IntRegs:$rs1, IntRegs:$rs2))]>;
 //| SNE      | R    | 27     | 1  |  | `11011 RDD RS1 RS2 01` | `sne   r1, r2, r3 ` | Set `RDD` to 1 if `RS1 != RS2`, 0 otherwise |
 def SNE : InstMupsRD2<27,      1, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
                       "sne $rdd, $rs1, $rs2",
-                      [/*TODO*/]>;
+                      [(set IntRegs:$rdd, (setne IntRegs:$rs1, IntRegs:$rs2))]>;
 //| SLT      | R    | 27     | 2  |  | `11011 RDD RS1 RS2 10` | `slt   r1, r2, r3 ` | Set `RDD` to 1 if `RS1 < RS2`, 0 otherwise, signed comparison |
 def SLT : InstMupsRD2<27,      2, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
                       "slt $rdd, $rs1, $rs2",
-                      [/*TODO*/]>;
+                      [(set IntRegs:$rdd, (setlt IntRegs:$rs1, IntRegs:$rs2))]>;
 //| SLTU     | R    | 27     | 3  |  | `11011 RDD RS1 RS2 11` | `sltu  r1, r2, r3 ` | Set `RDD` to 1 if `RS1 < RS2`, 0 otherwise, unsigned comparison |
 def SLTU: InstMupsRD2<27,      3, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
                       "sltu $rdd, $rs1, $rs2",
-                      [/*TODO*/]>;
+                      [(set IntRegs:$rdd, (setult IntRegs:$rs1, IntRegs:$rs2))]>;
 //| _unused_ |      | 28     |    |  | `11100               ` |                     | |
 //| _unused_ |      | 29     |    |  | `11101               ` |                     | |
 //| RFE      | R    | 30     | 0  |  | `11110 000 000 000 00` | `rfe              ` | Return from exception. Restore flags from values in `S1`, set page table index from value in `S2`, move `SPC` to `PC` |

@@ -70,6 +70,13 @@ class Mups16MCCodeEmitter : public MCCodeEmitter {
 // MSP430 //                        SmallVectorImpl<MCFixup> &Fixups,
 // MSP430 //                        const MCSubtargetInfo &STI) const;
 // MSP430 //
+//
+  // getBranchTargetOpValue - Return binary encoding of the branch
+  // target operand. If the machine operand requires relocation,
+  // record the relocation and return zero.
+  unsigned getBranchTargetOpValue(const MCInst &MI, unsigned OpNo,
+          SmallVectorImpl<MCFixup> &Fixups, const MCSubtargetInfo &STI) const;
+
 public:
   Mups16MCCodeEmitter(MCContext &ctx, MCInstrInfo const &MCII)
       : Ctx(ctx), MCII(MCII) {}
@@ -116,6 +123,32 @@ unsigned Mups16MCCodeEmitter::getMachineOpValue(const MCInst &MI,
 // MSP430 //  Offset += 2;
   return 0;
 }
+
+
+unsigned Mups16MCCodeEmitter::getBranchTargetOpValue(const MCInst &MI, unsigned OpNo,
+        SmallVectorImpl<MCFixup> &Fixups, const MCSubtargetInfo &STI) const
+{
+    const MCOperand &MO = MI.getOperand(OpNo);
+
+    // If the destination is an immediate, divide by 2.
+    if (MO.isImm())
+    {
+        return MO.getImm() >> 1;
+    }
+
+    assert(MO.isExpr() &&
+            "getBranchTargetOpValue expects only expressions or immediates");
+
+    /*
+    // FIXME: Define our own fixups?
+    const MCExpr *FixupExpression = MCBinaryExpr::createAdd(
+            MO.getExpr(), MCConstantExpr::create(-4, Ctx), Ctx);
+    Fixups.push_back(MCFixup::create(0, FixupExpression,
+                MCFixupKind(Mips::fixup_Mips_PC16)));
+    */
+    return 0;
+}
+
 
 // MSP430 //unsigned Mups16MCCodeEmitter::getMemOpValue(const MCInst &MI, unsigned Op,
 // MSP430 //                                            SmallVectorImpl<MCFixup> &Fixups,
