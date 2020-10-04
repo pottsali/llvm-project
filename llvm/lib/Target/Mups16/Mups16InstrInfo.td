@@ -79,7 +79,9 @@ def load_a          : AlignedLoad<load>;
 def store_a         : AlignedStore<store>;
 
 // Leaf pattern for matching memory addresses
-def addr: ComplexPattern<iPTR, 2, "selectAddr", [frameindex]>;
+def addr: ComplexPattern<iPTR, 2, "selectAddr", [], []>;
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Instruction definitions
@@ -127,6 +129,9 @@ def J     : InstMupsJ<6, (ins brtarget:$imm11),
 def JAL   : InstMupsJ<7, (ins uimm11:$imm11),
                       "jal $imm11",
                       [/*TODO*/]>;
+
+// FIXME: these really don't need to be type II instructions (offsets on a JR call are probably not
+// very useful). Make them R-type, and free up a couple more slots for shifts by immediates.
 //| JR       | II   | 8      |    |  | `01000 RDD III III II` | `jr    ra, 0      ` | Add 8-bit immediate to `RDD` and jump to result |
 def JR  : InstMupsII1<8, (ins memsrc:$src),
                       "jr  $src",
@@ -135,6 +140,15 @@ def JR  : InstMupsII1<8, (ins memsrc:$src),
 def JALR: InstMupsII1<9, (ins memsrc:$src),
                       "jalr $src",
                       [/*TODO*/]>;
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Load and store operations
+////////////////////////////////////////////////////////////////////////////////
+
+
+let mayLoad=1 in {
+
 //| LB       | I    | 10     |    |  | `01010 RDD RS1 III II` | `lb    r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load single byte from resulting memory address into `RDD`, with sign extension of bit 7 |
 def LB  : InstMupsID1<10, (outs IntReg:$rdd), (ins memsrc:$src),
                       "lb $rdd, $src",
@@ -146,7 +160,9 @@ def LBU : InstMupsID1<11, (outs IntReg:$rdd), (ins memsrc:$src),
 //| LW       | I    | 12     |    |  | `01100 RDD RS1 III II` | `lw    r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load two-byte word from resulting memory address into `RDD` |
 def LW  : InstMupsID1<12, (outs IntReg:$rdd), (ins memsrc:$src),
                       "lw $rdd, $src",
-                      [(set IntReg:$rdd, (load_a addr:$src))]>;
+                      [(set IntReg:$rdd, (load addr:$src))]>;
+}
+
 //| LI       | II   | 13     |    |  | `01101 RDD III III II` | `li    r1, 0x7e   ` | Load 8-bit immediate value into `RDD`, with sign-extension of bit 7 |
 def LI  : InstMupsIID<13, (outs IntReg:$rdd), (ins imm8:$imm8),
                       "li $rdd, $imm8",
@@ -159,14 +175,18 @@ def LIU : InstMupsIID<14, (outs IntReg:$rdd), (ins uimm8:$imm8),
 def LUI : InstMupsIID<15, (outs IntReg:$rdd), (ins imm8:$imm8),
                       "lui $rdd, $imm8",
                       [/*TODO*/]>;
+
+let mayStore = 1 in {
 //| SB       | I    | 16     |    |  | `10000 RS1 RS2 III II` | `sb    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store low byte in `RS2` to resulting memory address |
-def SB   : InstMupsI2<16, (ins memdst:$dst, IntReg:$rs2),
+def SB   : InstMupsI2<16, (ins IntReg:$rs2, memdst:$dst),
                       "sb $dst, $rs2",
                       [(truncstorei8 IntReg:$rs2, addr:$dst)]>;
 //| SW       | I    | 17     |    |  | `10001 RS1 RS2 III II` | `sw    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store two-byte word `RS2` to resulting memory address |
-def SW   : InstMupsI2<17, (ins memdst:$dst, IntReg:$rs2),
+def SW   : InstMupsI2<17, (ins IntReg:$rs2, memdst:$dst),
                       "sw $dst, $rs2",
                       [(store_a IntReg:$rs2, addr:$dst)]>;
+}
+
 //| _unused_ |      | 18     |    |  | `10010               ` |                     | |
 //| _unused_ |      | 19     |    |  | `10011               ` |                     | |
 
@@ -253,11 +273,11 @@ def SYSCALL:InstMupsR1<30,     1, (ins IntRegs:$rs1),
                       "syscall $rs1",
                       []>;
 //| MFS      | R    | 30     | 2  |  | `11110 RDD RS1 000 10` | `mfs r1, s1       ` | Move from system reg. Move contents of `RS1` to register `RDD`+8 |
-def MFS  : InstMupsR2<30,      2, (ins IntRegs:$rs1, SysReg:$rs2),
+def MFS  : InstMupsR2<30,      2, (ins IntRegs:$rs1, SysRegs:$rs2),
                       "mfs $rs1, $rs2",
                       []>;
 //| MTS      | R    | 30     | 3  |  | `11110 RDD RS1 000 11` | `mts s1, r1       ` | Move to system reg. Move contents of register `RDD`+8 to `RS1` |
-def MTS  : InstMupsR2<30,      3, (ins SysReg:$rs1, IntRegs:$rs2),
+def MTS  : InstMupsR2<30,      3, (ins SysRegs:$rs1, IntRegs:$rs2),
                       "mts $rs1, $rs2",
                       []>;
 //| PTRI     | R    | 31     | 0  |  | `11111 RDD 000 000 00` | `ptri r1          ` | Read current page table index into `RDD` |
@@ -276,3 +296,16 @@ def PTRE: InstMupsRD1<31,      2, (outs IntReg:$rdd), (ins IntRegs:$rs1),
 def PTSE : InstMupsR2<31,      3, (ins IntReg:$rs1, IntRegs:$rs2),
                       "ptse $rs1, $rs2",
                       []>;
+
+
+// Custom nodes to express instructions (sequences?) that don't map directly into llvm
+// Lowering will
+def mups16_ret : SDNode<"Mups16ISD::Ret", SDTNone, [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
+
+// Return
+let isBarrier = 1, isReturn = 1, isTerminator = 1 in
+def RetRA:    MupsPseudo<(outs), (ins),
+                      "",
+                      [(mups16_ret)]>;
+
+

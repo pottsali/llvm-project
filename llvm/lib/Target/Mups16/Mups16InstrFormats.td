@@ -21,6 +21,17 @@ class InstMups<bits<5> opcode, dag outs, dag ins, string asmstr, list<dag> patte
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Pseudo-instructions, for intermediate DAGs
+////////////////////////////////////////////////////////////////////////////////
+class MupsPseudo<dag outs, dag ins, string asmstr, list<dag> pattern>:
+      InstMups<0, outs, ins, asmstr, pattern>
+{
+    let isCodeGenOnly = 1;
+    let isPseudo = 1;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // J-type instructions, with an 11-bit immediate
 ////////////////////////////////////////////////////////////////////////////////
 class InstMupsJ<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
@@ -29,6 +40,15 @@ class InstMupsJ<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
     bits<11> imm11;
     let Inst{10-0} = imm11;
 }
+
+class InstMupsJR0<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
+  : InstMups<opcode, (outs), ins, asmstr, pattern>
+{
+    bits<3> tgt;
+    let Inst{10-8} = tgt;
+    let Inst{7-0} = 0;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // I-type instructions, with one dest register, one source, and a 5-bit 

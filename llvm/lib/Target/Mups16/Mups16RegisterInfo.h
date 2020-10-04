@@ -15,25 +15,26 @@
 #include "Mups16GenRegisterInfo.inc"
 
 namespace llvm {
-struct Mups16RegisterInfo : public Mups16GenRegisterInfo {
-  Mups16RegisterInfo();
 
-  /// Code Generation virtual methods...
-  const MCPhysReg *getCalleeSavedRegs(const MachineFunction *MF) const override;
-  BitVector getReservedRegs(const MachineFunction &MF) const override;
+    struct Mups16RegisterInfo : public Mups16GenRegisterInfo
+    {
+        Mups16RegisterInfo();
 
-  const TargetRegisterClass *getPointerRegClass(const MachineFunction &MF,
-                                                unsigned Kind) const override;
+        /// Code Generation virtual methods...
+        const MCPhysReg *getCalleeSavedRegs(const MachineFunction *MF) const override;
+        BitVector getReservedRegs(const MachineFunction &MF) const override;
 
-  void eliminateFrameIndex(MachineBasicBlock::iterator II,
-                           int SPAdj, unsigned FIOperandNum,
-                           RegScavenger *RS = nullptr) const override;
+        const TargetRegisterClass *getPointerRegClass(const MachineFunction &MF,
+                unsigned Kind) const override;
 
-  Register getFrameRegister(const MachineFunction &MF) const override;
+        void eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj, unsigned FIOperandNum,
+                RegScavenger *RS = nullptr) const override;
 
-  bool canRealignStack(const MachineFunction &MF) const override;
+        Register getFrameRegister(const MachineFunction &MF) const override;
 
-};
+        bool hasBasePointer(const MachineFunction &MF) const;
+
+    };
 
 } // end namespace llvm
 

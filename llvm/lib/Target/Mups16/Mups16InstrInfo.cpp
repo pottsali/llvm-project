@@ -35,6 +35,52 @@ Mups16InstrInfo::Mups16InstrInfo(Mups16Subtarget &STI)
 {
 }
 
+
+unsigned Mups16InstrInfo::isLoadFromStackSlot(const MachineInstr &MI, int &FrameIndex) const
+{
+    switch (MI.getOpcode())
+    {
+    default:
+        return 0;
+    case MUPS::LB:
+    case MUPS::LBU:
+    case MUPS::LW:
+        break;
+    }
+
+    // If the address is actually a frame index then we're loading from a stack slot.
+    if (MI.getOperand(1).isFI() && MI.getOperand(2).isImm() && MI.getOperand(2).getImm() == 0)
+    {
+        FrameIndex = MI.getOperand(1).getIndex();
+        return MI.getOperand(0).getReg();
+    }
+
+    return 0;
+}
+
+unsigned Mups16InstrInfo::isStoreToStackSlot(const MachineInstr &MI, int &FrameIndex) const
+{
+    switch (MI.getOpcode())
+    {
+    default:
+        return 0;
+    case MUPS::SB:
+    case MUPS::SW:
+        break;
+    }
+
+    // If the address is actually a frame index then we're storing to a stack slot.
+    if (MI.getOperand(1).isFI() && MI.getOperand(2).isImm() && MI.getOperand(2).getImm() == 0)
+    {
+        FrameIndex = MI.getOperand(1).getIndex();
+        return MI.getOperand(0).getReg();
+    }
+
+    return 0;
+}
+
+
+
 void Mups16InstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
                                           MachineBasicBlock::iterator MI,
                                           Register SrcReg, bool isKill, int FrameIdx,
@@ -84,7 +130,7 @@ void Mups16InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
             .addReg(DestReg, getDefRegState(true)).addFrameIndex(FrameIdx)
             .addImm(0).addMemOperand(MMO);
     else
-        llvm_unreachable("Cannot store this register to stack slot!");
+        llvm_unreachable("Cannot load this register from stack slot!");
 }
 
 void Mups16InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
@@ -304,3 +350,26 @@ unsigned Mups16InstrInfo::getInstSizeInBytes(const MachineInstr &MI) const
     return Desc.getSize();
 }
 
+
+bool Mups16InstrInfo::expandPostRAPseudo(MachineInstr &MI) const
+{
+    MachineBasicBlock &MBB = *MI.getParent();
+
+    switch (MI.getDesc().getOpcode()) {
+        default:
+            return false;
+        case MUPS::RetRA:
+            expandRetRA(MBB, MI);
+            break;
+    }
+
+    MBB.erase(MI);
+    return true;
+
+}
+
+
+void Mups16InstrInfo::expandRetRA(MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const
+{
+    BuildMI(MBB, I, I->getDebugLoc(), get(MUPS::JR)).addReg(MUPS::RA).addImm(0);
+}

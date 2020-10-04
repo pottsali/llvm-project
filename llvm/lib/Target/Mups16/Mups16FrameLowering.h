@@ -22,8 +22,9 @@ namespace llvm {
 class Mups16FrameLowering : public TargetFrameLowering
 {
 public:
-    explicit Mups16FrameLowering()
-        : TargetFrameLowering(StackGrowsDown, Align(2), 0, Align(2))
+    explicit Mups16FrameLowering(const Mups16Subtarget& subtarget)
+        : TargetFrameLowering(StackGrowsDown, Align(2), 0, Align(2)),
+          STI(subtarget)
     {
     }
 
@@ -42,6 +43,11 @@ public:
                                 const TargetRegisterInfo *TRI) const override;
 
     bool hasFP(const MachineFunction &MF) const override;
+
+private:
+    void determineFrameLayout(MachineFunction &MF) const;
+
+    const Mups16Subtarget &STI;
 };
 
 } // End llvm namespace

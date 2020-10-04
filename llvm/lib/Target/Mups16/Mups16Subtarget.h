@@ -56,7 +56,7 @@ public:
     { 
         return &InstrInfo;
     }
-    const TargetRegisterInfo *getRegisterInfo() const override
+    const Mups16RegisterInfo *getRegisterInfo() const override
     {
         return &InstrInfo.getRegisterInfo();
     }

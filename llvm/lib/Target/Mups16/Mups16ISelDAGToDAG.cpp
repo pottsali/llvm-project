@@ -96,6 +96,7 @@ bool Mups16DAGToDAGISel::selectAddr(SDValue Addr, SDValue &Base, SDValue &Offset
         return true;
     }
 
+
     // Addresses of the form offset(base)
     if (CurDAG->isBaseWithConstantOffset(Addr))
     {

@@ -28,7 +28,7 @@ void Mups16Subtarget::anchor()
 
 Mups16Subtarget::Mups16Subtarget(const Triple &TT, const std::string &CPU,
                                  const std::string &FS, const TargetMachine &TM)
-    : Mups16GenSubtargetInfo(TT, CPU, FS), FrameLowering(),
+    : Mups16GenSubtargetInfo(TT, CPU, FS), FrameLowering(*this),
       InstrInfo(*this), TLInfo(TM, *this)
 {
 }

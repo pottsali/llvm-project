@@ -629,5 +629,89 @@ SDValue Mups16TargetLowering::LowerCCCArguments(SDValue Chain, CallingConv::ID C
     // TODO: struct returns (isSRet() == true)?
 
     return Chain;
+}
 
+bool Mups16TargetLowering::CanLowerReturn(CallingConv::ID CallConv, MachineFunction &MF,
+        bool IsVarArg, const SmallVectorImpl<ISD::OutputArg> &Outs, LLVMContext &Context) const
+{
+    SmallVector<CCValAssign, 16> RVLocs;
+    CCState CCInfo(CallConv, IsVarArg, MF, RVLocs, Context);
+    return CCInfo.CheckReturn(Outs, RetCC_Mups16);
+}
+
+
+SDValue Mups16TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
+        bool isVarArg, const SmallVectorImpl<ISD::OutputArg> &Outs,
+        const SmallVectorImpl<SDValue> &OutVals, const SDLoc &dl, SelectionDAG &DAG) const
+{
+
+    MachineFunction &MF = DAG.getMachineFunction();
+
+    // CCValAssign - represent the assignment of the return value to a location
+    SmallVector<CCValAssign, 16> RVLocs;
+
+    // CCState - Info about the registers and stack slot.
+    CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), RVLocs, *DAG.getContext());
+
+    // Analyse return values.
+    CCInfo.AnalyzeReturn(Outs, RetCC_Mups16);
+
+    SDValue Glue;
+    SmallVector<SDValue, 4> RetOps(1, Chain);
+
+    // Copy the result values into the output registers.
+    for (unsigned i = 0; i != RVLocs.size(); ++i)
+    {
+        CCValAssign &VA = RVLocs[i];
+        assert(VA.isRegLoc() && "Can only return in registers!");
+
+        Chain = DAG.getCopyToReg(Chain, dl, VA.getLocReg(), OutVals[i], Glue);
+
+        // Guarantee that all emitted copies are stuck together,
+        // avoiding something bad.
+        Glue = Chain.getValue(1);
+        RetOps.push_back(DAG.getRegister(VA.getLocReg(), VA.getLocVT()));
+    }
+
+    /* TODO
+    if (MF.getFunction().hasStructRetAttr())
+    {
+        MSP430MachineFunctionInfo *FuncInfo = MF.getInfo<MSP430MachineFunctionInfo>();
+        unsigned Reg = FuncInfo->getSRetReturnReg();
+
+        if (!Reg)
+            llvm_unreachable("sret virtual register not created in entry block");
+
+        SDValue Val =
+            DAG.getCopyFromReg(Chain, dl, Reg, getPointerTy(DAG.getDataLayout()));
+        unsigned R12 = MSP430::R12;
+
+        Chain = DAG.getCopyToReg(Chain, dl, R12, Val, Glue);
+        Glue = Chain.getValue(1);
+        RetOps.push_back(DAG.getRegister(R12, getPointerTy(DAG.getDataLayout())));
+    }
+    */
+
+    RetOps[0] = Chain;  // Update chain.
+
+    // Add the flag if we have it.
+    if (Glue.getNode())
+        RetOps.push_back(Glue);
+
+    return DAG.getNode(Mups16ISD::Ret, dl, MVT::Other, RetOps);
+}
+
+const char *Mups16TargetLowering::getTargetNodeName(unsigned Opcode) const
+{
+    switch ((Mups16ISD::NodeType)Opcode)
+    {
+        case Mups16ISD::FIRST_NUMBER:
+            break;
+        case Mups16ISD::JmpLink:
+            return "Mups16ISD::JmpLink";
+        case Mups16ISD::Ret:
+            return "Mups16ISD::Ret";
+    }
+
+    return nullptr;
 }

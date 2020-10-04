@@ -26,7 +26,7 @@ def R2 : Ri< 2, "r2">, DwarfRegNum<[2]>;
 def R3 : Ri< 3, "r3">, DwarfRegNum<[3]>;
 def R4 : Ri< 4, "r4">, DwarfRegNum<[4]>;
 def SP : Ri< 5, "sp">, DwarfRegNum<[5]>;
-def PC : Ri< 6, "pc">, DwarfRegNum<[6]>;
+def FP : Ri< 6, "fp">, DwarfRegNum<[6]>;
 def RA : Ri< 7, "ra">, DwarfRegNum<[7]>;
 
 // System registers (not generally visible to the user, but some instructions use them)
@@ -36,17 +36,19 @@ def S2  : Ri< 2, "s2">;
 def S3  : Ri< 3, "s3">;
 def TSP : Ri< 4, "tsp">;
 def TMP : Ri< 5, "tmp">;
+def PC  : Ri< 6, "pc">;
+def FLG : Ri< 7, "flg">;
 
 // Register classes.
 //
 // FIXME: the register order should be defined in terms of the preferred
 // allocation order...
 //
-def IntRegs : RegisterClass<"MUPS", [i16], 16, (add Zero, R1, R2, R3, R4, SP, PC, RA)>;
+def IntRegs : RegisterClass<"MUPS", [i16], 16, (add Zero, R1, R2, R3, R4, SP, FP, RA, PC, FLG)>;
 def IntReg : RegisterOperand<IntRegs>;
 
 let isAllocatable = 0 in {
-  def SysRegs : RegisterClass<"MUPS", [i16], 16, (add Zero, SP, PC, RA, SPC, S1, S2, S3, TSP, TMP)>;
+  def SysRegs : RegisterClass<"MUPS", [i16], 16, (add Zero, SP, FP, RA, SPC, S1, S2, S3, TSP, TMP, PC, FLG)>;
 }
 def SysReg : RegisterOperand<SysRegs>;
 
