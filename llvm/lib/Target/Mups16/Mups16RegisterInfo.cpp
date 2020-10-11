@@ -43,7 +43,7 @@ Mups16RegisterInfo::Mups16RegisterInfo()
 const MCPhysReg* Mups16RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const
 {
     static const MCPhysReg CalleeSavedRegs[] = {
-        MUPS::R1, MUPS::R2, MUPS::R3, MUPS::R4, MUPS::RA,
+        MUPS::R2, MUPS::R3, MUPS::R4, MUPS::RA,
         0
     };
     return CalleeSavedRegs;
@@ -53,9 +53,12 @@ BitVector Mups16RegisterInfo::getReservedRegs(const MachineFunction &MF) const
 {
     BitVector reserved(getNumRegs());
 
-    // FIXME: this should include all reserved regs, I think (Zero, RA, SP, system regs)
-
-    //reserved.set(MUPS::R1);
+    // FIXME: does this need to contain system registers? Or does the isAllocatable in the register
+    // class handle that for us?
+    reserved.set(MUPS::Zero);
+    reserved.set(MUPS::SP);
+    reserved.set(getFrameRegister(MF));
+    reserved.set(MUPS::RA);
 
     return reserved;
 }
@@ -104,6 +107,11 @@ void Mups16RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                       << "Offset         : " << Offset << "\n"
                       << "FIOperandNum   : " << FIOperandNum << "\n"
                 );
+    LLVM_DEBUG(dbgs() << "MI before    : " << MI << "\n"
+                      << "         op0 : " << MI.getOperand(0) << "\n"
+                      << "         op1 : " << MI.getOperand(1) << "\n"
+                      << "         op2 : " << MI.getOperand(2) << "\n"
+                      );
 
     // Replace frame index with a frame pointer reference.
     // If the offset is small enough to fit in the immediate field, directly

@@ -113,6 +113,12 @@ bool Mups16DAGToDAGISel::selectAddr(SDValue Addr, SDValue &Base, SDValue &Offset
             Offset = CurDAG->getTargetConstant(CN->getZExtValue(), SDLoc(Addr), ValTy);
             return true;
         }
+        else
+        {
+            // FIXME: what now?
+            assert(isInt<5>(CN->getSExtValue()) && "Oversized offset in load/store not supported yet");
+            return false;
+        }
     }
 
     // Base case is just a plain address with no offset

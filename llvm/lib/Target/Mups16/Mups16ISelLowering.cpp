@@ -53,7 +53,7 @@ Mups16TargetLowering::Mups16TargetLowering(const TargetMachine &TM,
     setBooleanContents(ZeroOrOneBooleanContent);
     setBooleanVectorContents(ZeroOrOneBooleanContent); // FIXME: Is this correct?
 
-    // We have post-incremented loads / stores.
+    // We don't have post-incremented loads / stores.
     setIndexedLoadAction(ISD::POST_INC, MVT::i8,  Expand);
     setIndexedLoadAction(ISD::POST_INC, MVT::i16, Expand);
 
@@ -61,8 +61,8 @@ Mups16TargetLowering::Mups16TargetLowering(const TargetMachine &TM,
         setLoadExtAction(ISD::EXTLOAD,  VT, MVT::i1,  Promote);
         setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i1,  Promote);
         setLoadExtAction(ISD::ZEXTLOAD, VT, MVT::i1,  Promote);
-        setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i8,  Expand);
-        setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i16, Expand);
+        //setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i8,  Expand);
+        //setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i16, Expand);
     }
 
     // We don't have any truncstores
@@ -711,6 +711,8 @@ const char *Mups16TargetLowering::getTargetNodeName(unsigned Opcode) const
             return "Mups16ISD::JmpLink";
         case Mups16ISD::Ret:
             return "Mups16ISD::Ret";
+        case Mups16ISD::LoadImm:
+            return "Mups16ISD::LoadImm";
     }
 
     return nullptr;

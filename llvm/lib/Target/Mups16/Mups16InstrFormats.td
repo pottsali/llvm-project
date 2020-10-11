@@ -23,8 +23,8 @@ class InstMups<bits<5> opcode, dag outs, dag ins, string asmstr, list<dag> patte
 ////////////////////////////////////////////////////////////////////////////////
 // Pseudo-instructions, for intermediate DAGs
 ////////////////////////////////////////////////////////////////////////////////
-class MupsPseudo<dag outs, dag ins, string asmstr, list<dag> pattern>:
-      InstMups<0, outs, ins, asmstr, pattern>
+class MupsPseudo<dag outs, dag ins, list<dag> pattern>:
+      InstMups<0, outs, ins, "", pattern>
 {
     let isCodeGenOnly = 1;
     let isPseudo = 1;

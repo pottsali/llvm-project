@@ -56,10 +56,28 @@ void Mups16FrameLowering::determineFrameLayout(MachineFunction &MF) const
     MFI.setStackSize(FrameSize);
 }
 
+// Current convention: SP always points to the last element on the stack. 
+// On function entry SP will point to the first argument that isn't passed in registers (currently,
+// that would be arguments 5 and later):
+//
+// sp+2     arg5
+// sp       arg4
+//
+// On entry, we save the old frame pointer, generate a new one pointing to the first word after the
+// function arguments, and decrement SP. If sp was 0x100 in the above diagram, our frame would end
+// up being:
+// 
+// 0x102    arg5
+// 0x100    arg4
+// 0x09e    <old fp>    <- fp points here now
+// 0x09c    <local>
+// 0x09a    <local>     <- sp points here now
+//
+//
 // Generates the following sequence for function entry:
 //   sw -2[$sp], $fp        ; push old FP
-//   addi $fp, $sp, 4       ; generate new FP
-//   addi $sp, $sp, -2      ; allocate stack space (as needed)
+//   addi $fp, $sp, -2      ; generate new FP
+//   addi $sp, $sp, -4      ; allocate stack space (as needed)
 void Mups16FrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const
 {
     // FIXME: document what this means?
@@ -77,32 +95,32 @@ void Mups16FrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &M
     // Determine the correct frame layout
     determineFrameLayout(MF);
 
-    unsigned StackSize = MFI.getStackSize();
+    // We need an extra 2 bytes on top of whatever the function itself needs to hold the saved frame
+    // pointer.
+    unsigned StackSize = MFI.getStackSize() + 2;
 
     // Push old FP
-    // sw -4[$sp], $fp
+    // sw -2[$sp], $fp
     BuildMI(MBB, MBBI, DL, LII.get(MUPS::SW))
-        .addReg(MUPS::FP)
         .addReg(MUPS::SP)
         .addImm(-2)
+        .addReg(MUPS::FP)
         .setMIFlag(MachineInstr::FrameSetup);
 
     // Generate new FP
     // addi $fp, $sp, 4
     BuildMI(MBB, MBBI, DL, LII.get(MUPS::ADDI), MUPS::FP)
         .addReg(MUPS::SP)
-        .addImm(4)
+        .addImm(-2)
         .setMIFlag(MachineInstr::FrameSetup);
 
-    // Allocate space on the stack if needed
-    // subi $sp, $sp, -2
-    if (StackSize != 0)
-    {
-        BuildMI(MBB, MBBI, DL, LII.get(MUPS::ADDI), MUPS::SP)
-            .addReg(MUPS::SP)
-            .addImm(-StackSize)
-            .setMIFlag(MachineInstr::FrameSetup);
-    }
+    // Allocate space on the stack. We'll always need at least two bytes, for the saved frame
+    // pointer
+    // subi $sp, $sp, -4
+    BuildMI(MBB, MBBI, DL, LII.get(MUPS::ADDI), MUPS::SP)
+        .addReg(MUPS::SP)
+        .addImm(-static_cast<int32_t>(StackSize))
+        .setMIFlag(MachineInstr::FrameSetup);
 
     // Replace ADJDYNANALLOC
     // FIXME

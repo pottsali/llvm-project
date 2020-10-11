@@ -44,7 +44,9 @@ def FLG : Ri< 7, "flg">;
 // FIXME: the register order should be defined in terms of the preferred
 // allocation order...
 //
-def IntRegs : RegisterClass<"MUPS", [i16], 16, (add Zero, R1, R2, R3, R4, SP, FP, RA, PC, FLG)>;
+def AllIntRegs : RegisterClass<"MUPS", [i16], 16, (add Zero, R1, R2, R3, R4, SP, FP, RA, SPC, S1, S2, S3, TSP, TMP, PC, FLG)>;
+
+def IntRegs : RegisterClass<"MUPS", [i16], 16, (add Zero, R1, R2, R3, R4, SP, FP, RA)>;
 def IntReg : RegisterOperand<IntRegs>;
 
 let isAllocatable = 0 in {

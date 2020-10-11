@@ -33,7 +33,10 @@ namespace llvm {
 			JmpLink,
 
 			// Return
-			Ret
+			Ret,
+
+            // Load immediate >= 256 into register
+            LoadImm
 		};
 	}
 

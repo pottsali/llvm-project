@@ -89,6 +89,8 @@ private:
     // Expand ret into 'jr ra'
     void expandRetRA(MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const;
 
+    void expandLoadImm(MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const;
+
 };
 
 }

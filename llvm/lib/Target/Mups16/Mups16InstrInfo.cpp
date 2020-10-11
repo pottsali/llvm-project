@@ -116,21 +116,16 @@ void Mups16InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
 {
     DebugLoc DL;
     if (MI != MBB.end())
+    {
         DL = MI->getDebugLoc();
-    MachineFunction &MF = *MBB.getParent();
-    MachineFrameInfo &MFI = MF.getFrameInfo();
+    }
 
-    MachineMemOperand *MMO = MF.getMachineMemOperand(
-            MachinePointerInfo::getFixedStack(MF, FrameIdx),
-            MachineMemOperand::MOLoad, MFI.getObjectSize(FrameIdx),
-            MFI.getObjectAlign(FrameIdx));
-
-    if (RC == &MUPS::IntRegsRegClass)
-        BuildMI(MBB, MI, DL, get(MUPS::LW))
-            .addReg(DestReg, getDefRegState(true)).addFrameIndex(FrameIdx)
-            .addImm(0).addMemOperand(MMO);
-    else
+    if (RC != &MUPS::IntRegsRegClass)
         llvm_unreachable("Cannot load this register from stack slot!");
+
+    BuildMI(MBB, MI, DL, get(MUPS::LW), DestReg)
+        .addFrameIndex(FrameIdx)
+        .addImm(0);
 }
 
 void Mups16InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
@@ -361,6 +356,9 @@ bool Mups16InstrInfo::expandPostRAPseudo(MachineInstr &MI) const
         case MUPS::RetRA:
             expandRetRA(MBB, MI);
             break;
+        case MUPS::LoadImm:
+            expandLoadImm(MBB, MI);
+            break;
     }
 
     MBB.erase(MI);
@@ -373,3 +371,16 @@ void Mups16InstrInfo::expandRetRA(MachineBasicBlock &MBB, MachineBasicBlock::ite
 {
     BuildMI(MBB, I, I->getDebugLoc(), get(MUPS::JR)).addReg(MUPS::RA).addImm(0);
 }
+
+void Mups16InstrInfo::expandLoadImm(MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const
+{
+    //FIXME
+    auto& reg = I->getOperand(0);
+    BuildMI(MBB, I, I->getDebugLoc(), get(MUPS::LIU))
+        .addReg(reg.getReg())
+        .addImm(I->getOperand(1).getImm() & 0xff);
+    BuildMI(MBB, I, I->getDebugLoc(), get(MUPS::LUI))
+        .addReg(reg.getReg())
+        .addImm((I->getOperand(1).getImm() >> 8) & 0xff);
+}
+

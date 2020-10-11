@@ -5,23 +5,42 @@ include "Mups16InstrFormats.td"
 ////////////////////////////////////////////////////////////////////////////////
 
 // Signed immediate values
-def imm5 : Operand<i16>;
-def imm8 : Operand<i16>;
-
-// Unsigned immediate values
-def uimm5 : Operand<i16>
+def Imm5AsmOperand : AsmOperandClass { let Name = "Imm5"; }
+def imm5 : Operand<i16>, PatLeaf<(imm), [{ return isInt<5>(N->getSExtValue()); }]>
 {
-    let PrintMethod = "printUImm<5>";
+    let ParserMatchClass = Imm5AsmOperand;
 }
 
-def uimm8 : Operand<i16>
+def Imm8AsmOperand : AsmOperandClass { let Name = "Imm8"; }
+def imm8 : Operand<i16>, PatLeaf<(imm), [{ return isInt<8>(N->getSExtValue()); }]>
 {
-    let PrintMethod = "printUImm<8>";
+    let ParserMatchClass = Imm8AsmOperand;
+}
+
+// Unsigned immediate values
+def UImm5AsmOperand : AsmOperandClass { let Name = "UImm5"; }
+def uimm5 : Operand<i16>, PatLeaf<(imm), [{ return isUInt<5>(N->getZExtValue()); }]>
+{
+    //let PrintMethod = "printUImm<5>";
+    let ParserMatchClass = UImm5AsmOperand;
+}
+
+def UImm8AsmOperand : AsmOperandClass { let Name = "UImm8"; }
+def uimm8 : Operand<i16>, PatLeaf<(imm), [{ return isUInt<8>(N->getZExtValue()); }]>
+{
+    //let PrintMethod = "printUImm<8>";
+    let ParserMatchClass = UImm8AsmOperand;
 }
 
 def uimm11 : Operand<i16>
 {
-    let PrintMethod = "printUImm<11>";
+    //let PrintMethod = "printUImm<11>";
+}
+
+def Imm16AsmOperand : AsmOperandClass { let Name = "Imm16"; }
+def imm16 : Operand<i16>, PatLeaf<(imm), [{ return isInt<16>(N->getZExtValue()); }]>
+{
+    let ParserMatchClass = ImmAsmOperand;
 }
 
 // Memory operand
@@ -45,19 +64,19 @@ def memdst : Operand<i16> {
 //  let DecoderMethod = "DecodeMemOperand";
 }
 
-// Jump and branch operands
-def Mups16JumpTargetAsmOperand : AsmOperandClass {
-  let Name = "JumpTarget";
+// Branch operands
+def Mups16BranchTargetAsmOperand : AsmOperandClass {
+  let Name = "BranchTarget";
   //let ParserMethod = "parseJumpTarget";
-  let PredicateMethod = "isImm";
-  let RenderMethod = "addImmOperands";
+  let PredicateMethod = "isImm8";
+  let RenderMethod = "addImm8Operands";
 }
 
 def brtarget    : Operand<OtherVT> {
   let EncoderMethod = "getBranchTargetOpValue";
   let OperandType = "OPERAND_PCREL";
   let DecoderMethod = "DecodeBranchTarget";
-  let ParserMatchClass = Mups16JumpTargetAsmOperand;
+  let ParserMatchClass = Mups16BranchTargetAsmOperand;
 }
 
 // Pattern fragments for loads and stores
@@ -79,8 +98,19 @@ def load_a          : AlignedLoad<load>;
 def store_a         : AlignedStore<store>;
 
 // Leaf pattern for matching memory addresses
-def addr: ComplexPattern<iPTR, 2, "selectAddr", [], []>;
+def addr: ComplexPattern<iPTR, 2, "selectAddr", [frameindex], []>;
 
+// Constant transformations
+// Extract bits 0-7 (low byte) of an immediate value.
+def LO8 : SDNodeXForm<imm, [{
+  return CurDAG->getTargetConstant((uint64_t)N->getZExtValue() & 0xff, SDLoc(N), MVT::i16);
+}]>;
+
+// Extract bits 8-15 (high byte) of an immediate value.
+// Transformation function: shift the immediate value down into the low bits.
+def HI8 : SDNodeXForm<imm, [{
+  return CurDAG->getTargetConstant((uint64_t)N->getZExtValue() >> 8, SDLoc(N), MVT::i16);
+}]>;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -163,16 +193,19 @@ def LW  : InstMupsID1<12, (outs IntReg:$rdd), (ins memsrc:$src),
                       [(set IntReg:$rdd, (load addr:$src))]>;
 }
 
+// Pattern for anyext loads, since they don't seem to match either of the above
+def : Pat<(extloadi8  addr:$src), (i16 (LBU addr:$src))>;
+
 //| LI       | II   | 13     |    |  | `01101 RDD III III II` | `li    r1, 0x7e   ` | Load 8-bit immediate value into `RDD`, with sign-extension of bit 7 |
 def LI  : InstMupsIID<13, (outs IntReg:$rdd), (ins imm8:$imm8),
                       "li $rdd, $imm8",
-                      [(set IntReg:$rdd, i16:$imm8)]>;
+                      [(set IntReg:$rdd, imm8:$imm8)]>;
 //| LIU      | II   | 14     |    |  | `01110 RDD III III II` | `liu   r1, 0xff   ` | Load 8-bit immediate value into `RDD`, with top 8 bits set to 0 |
 def LIU : InstMupsIID<14, (outs IntReg:$rdd), (ins uimm8:$imm8),
-                      "li $rdd, $imm8",
-                      [/*TODO*/]>;
+                      "liu $rdd, $imm8",
+                      [(set IntReg:$rdd, uimm8:$imm8)]>;
 //| LUI      | II   | 15     |    |  | `01111 RDD III III II` | `lui   r1, 0x01   ` | Load 8-bit immediate value into upper 8 bits of `RDD`. Lower 8 bits are unchanged |
-def LUI : InstMupsIID<15, (outs IntReg:$rdd), (ins imm8:$imm8),
+def LUI : InstMupsIID<15, (outs IntReg:$rdd), (ins uimm8:$imm8),
                       "lui $rdd, $imm8",
                       [/*TODO*/]>;
 
@@ -182,9 +215,9 @@ def SB   : InstMupsI2<16, (ins IntReg:$rs2, memdst:$dst),
                       "sb $dst, $rs2",
                       [(truncstorei8 IntReg:$rs2, addr:$dst)]>;
 //| SW       | I    | 17     |    |  | `10001 RS1 RS2 III II` | `sw    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store two-byte word `RS2` to resulting memory address |
-def SW   : InstMupsI2<17, (ins IntReg:$rs2, memdst:$dst),
+def SW   : InstMupsI2<17, (ins memdst:$dst, IntReg:$rs2),
                       "sw $dst, $rs2",
-                      [(store_a IntReg:$rs2, addr:$dst)]>;
+                      [(store_a (i16 IntReg:$rs2), addr:$dst)]>;
 }
 
 //| _unused_ |      | 18     |    |  | `10010               ` |                     | |
@@ -298,14 +331,22 @@ def PTSE : InstMupsR2<31,      3, (ins IntReg:$rs1, IntRegs:$rs2),
                       []>;
 
 
-// Custom nodes to express instructions (sequences?) that don't map directly into llvm
+////////////////////////////////////////////////////////////////////////////////
+// Custom non-instruction patterns
+// 
+// These mostly consist of a pattern that matches 
+////////////////////////////////////////////////////////////////////////////////
+
+// Arbitrary immediate, for loading constants greater than 8-bit into a register
+def LoadImm:    MupsPseudo<(outs IntReg:$rdd), (ins imm16:$imm),
+                      [(set IntReg:$rdd, imm:$imm)]>;
+
 // Lowering will
 def mups16_ret : SDNode<"Mups16ISD::Ret", SDTNone, [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
 
 // Return
 let isBarrier = 1, isReturn = 1, isTerminator = 1 in
 def RetRA:    MupsPseudo<(outs), (ins),
-                      "",
                       [(mups16_ret)]>;
 
 

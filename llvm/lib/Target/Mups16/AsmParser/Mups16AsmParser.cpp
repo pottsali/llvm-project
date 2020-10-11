@@ -41,197 +41,265 @@ extern const MCRegisterDesc Mups16RegDesc[];
 namespace {
 
 /// Parses Mups16 assembly from a stream.
-class Mups16AsmParser : public MCTargetAsmParser {
-  const MCSubtargetInfo &STI;
-  MCAsmParser &Parser;
-  const MCRegisterInfo *MRI;
+class Mups16AsmParser : public MCTargetAsmParser
+{
+    const MCSubtargetInfo &STI;
+    MCAsmParser &Parser;
+    const MCRegisterInfo *MRI;
 
-  bool MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
-                               OperandVector &Operands, MCStreamer &Out,
-                               uint64_t &ErrorInfo,
-                               bool MatchingInlineAsm) override;
+    bool MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
+            OperandVector &Operands, MCStreamer &Out,
+            uint64_t &ErrorInfo,
+            bool MatchingInlineAsm) override;
 
-  bool ParseRegister(unsigned &RegNo, SMLoc &StartLoc, SMLoc &EndLoc) override;
-  OperandMatchResultTy tryParseRegister(unsigned &RegNo, SMLoc &StartLoc,
-                                        SMLoc &EndLoc) override;
+    bool ParseRegister(unsigned &RegNo, SMLoc &StartLoc, SMLoc &EndLoc) override;
+    OperandMatchResultTy tryParseRegister(unsigned &RegNo, SMLoc &StartLoc,
+            SMLoc &EndLoc) override;
 
-  bool mnemonicIsValid(StringRef Mnemonic, unsigned VariantID);
+    bool mnemonicIsValid(StringRef Mnemonic, unsigned VariantID);
 
-  bool ParseInstruction(ParseInstructionInfo &Info, StringRef Name,
-                        SMLoc NameLoc, OperandVector &Operands) override;
+    bool ParseInstruction(ParseInstructionInfo &Info, StringRef Name,
+            SMLoc NameLoc, OperandVector &Operands) override;
 
-  bool ParseDirective(AsmToken DirectiveID) override;
+    bool ParseDirective(AsmToken DirectiveID) override;
 
-  bool parseMemOperand(OperandVector &Operands, const MCExpr *Val, SMLoc StartLoc);
-  bool parseOperand(OperandVector &, StringRef Mnemonic);
+    bool parseMemOperand(OperandVector &Operands, const MCExpr *Val, SMLoc StartLoc);
+    bool parseOperand(OperandVector &, StringRef Mnemonic);
 
-  bool ParseLiteralValues(unsigned Size, SMLoc L);
+    bool ParseLiteralValues(unsigned Size, SMLoc L);
 
-  /// @name Auto-generated Matcher Functions
-  /// {
+    /// @name Auto-generated Matcher Functions
+    /// {
 
 #define GET_ASSEMBLER_HEADER
 #include "Mups16GenAsmMatcher.inc"
 
-  /// }
+    /// }
 
-public:
-  Mups16AsmParser(const MCSubtargetInfo &STI, MCAsmParser &Parser,
-                  const MCInstrInfo &MII, const MCTargetOptions &Options)
-      : MCTargetAsmParser(Options, STI, MII), STI(STI), Parser(Parser) {
-    MCAsmParserExtension::Initialize(Parser);
-  }
+    public:
+    Mups16AsmParser(const MCSubtargetInfo &STI, MCAsmParser &Parser,
+            const MCInstrInfo &MII, const MCTargetOptions &Options)
+        : MCTargetAsmParser(Options, STI, MII), STI(STI), Parser(Parser) {
+            MCAsmParserExtension::Initialize(Parser);
+        }
 };
 
 /// A parsed Mups16 assembly operand.
-class Mups16Operand : public MCParsedAsmOperand {
-  typedef MCParsedAsmOperand Base;
+class Mups16Operand : public MCParsedAsmOperand
+{
+    typedef MCParsedAsmOperand Base;
 
-  enum KindTy {
-    k_Imm,
-    k_Reg,
-    k_Tok,
-    k_Mem,
-    //k_IndReg,
-    //k_PostIndReg
-  } Kind;
+    enum KindTy {
+        k_Imm,
+        k_Reg,
+        k_Tok,
+        k_Mem,
+        //k_IndReg,
+        //k_PostIndReg
+    } Kind;
 
-  struct Memory {
-    unsigned Reg;
-    const MCExpr *Offset;
-  };
-  union {
-    const MCExpr *Imm;
-    unsigned      Reg;
-    StringRef     Tok;
-    Memory        Mem;
-  };
+    struct Memory {
+        unsigned Reg;
+        const MCExpr *Offset;
+    };
+    union {
+        const MCExpr *Imm;
+        unsigned      Reg;
+        StringRef     Tok;
+        Memory        Mem;
+    };
 
-  SMLoc Start, End;
+    SMLoc Start, End;
 
-public:
-  Mups16Operand(StringRef Tok, SMLoc const &S)
-      : Base(), Kind(k_Tok), Tok(Tok), Start(S), End(S) {}
-  Mups16Operand(KindTy Kind, unsigned Reg, SMLoc const &S, SMLoc const &E)
-      : Base(), Kind(Kind), Reg(Reg), Start(S), End(E) {}
-  Mups16Operand(MCExpr const *Imm, SMLoc const &S, SMLoc const &E)
-      : Base(), Kind(k_Imm), Imm(Imm), Start(S), End(E) {}
-  Mups16Operand(unsigned Reg, MCExpr const *Expr, SMLoc const &S, SMLoc const &E)
-      : Base(), Kind(k_Mem), Mem({Reg, Expr}), Start(S), End(E) {}
+    public:
+    Mups16Operand(StringRef Tok, SMLoc const &S)
+        : Base(), Kind(k_Tok), Tok(Tok), Start(S), End(S) {}
+    Mups16Operand(KindTy Kind, unsigned Reg, SMLoc const &S, SMLoc const &E)
+        : Base(), Kind(Kind), Reg(Reg), Start(S), End(E) {}
+    Mups16Operand(MCExpr const *Imm, SMLoc const &S, SMLoc const &E)
+        : Base(), Kind(k_Imm), Imm(Imm), Start(S), End(E) {}
+    Mups16Operand(unsigned Reg, MCExpr const *Expr, SMLoc const &S, SMLoc const &E)
+        : Base(), Kind(k_Mem), Mem({Reg, Expr}), Start(S), End(E) {}
 
-  void addRegOperands(MCInst &Inst, unsigned N) const {
-    assert(Kind == k_Reg && "Unexpected operand kind");
-    assert(N == 1 && "Invalid number of operands!");
+    void addRegOperands(MCInst &Inst, unsigned N) const {
+        assert(Kind == k_Reg && "Unexpected operand kind");
+        assert(N == 1 && "Invalid number of operands!");
 
-    Inst.addOperand(MCOperand::createReg(Reg));
-  }
-
-  void addExprOperand(MCInst &Inst, const MCExpr *Expr) const {
-    // Add as immediate when possible
-    if (!Expr)
-      Inst.addOperand(MCOperand::createImm(0));
-    else if (const MCConstantExpr *CE = dyn_cast<MCConstantExpr>(Expr))
-      Inst.addOperand(MCOperand::createImm(CE->getValue()));
-    else
-      Inst.addOperand(MCOperand::createExpr(Expr));
-  }
-
-  void addImmOperands(MCInst &Inst, unsigned N) const {
-    assert(Kind == k_Imm && "Unexpected operand kind");
-    assert(N == 1 && "Invalid number of operands!");
-
-    addExprOperand(Inst, Imm);
-  }
-
-  void addMemOperands(MCInst &Inst, unsigned N) const {
-    assert(Kind == k_Mem && "Unexpected operand kind");
-    assert(N == 2 && "Invalid number of operands");
-
-    Inst.addOperand(MCOperand::createReg(Mem.Reg));
-    addExprOperand(Inst, Mem.Offset);
-  }
-
-  bool isReg()   const override { return Kind == k_Reg; }
-  bool isImm()   const override { return Kind == k_Imm; }
-  bool isToken() const override { return Kind == k_Tok; }
-  bool isMem()   const override { return Kind == k_Mem; }
-  /*
-  bool isIndReg()         const { return Kind == k_IndReg; }
-  bool isPostIndReg()     const { return Kind == k_PostIndReg; }
-
-  bool isCGImm() const {
-    if (Kind != k_Imm)
-      return false;
-
-    int64_t Val;
-    if (!Imm->evaluateAsAbsolute(Val))
-      return false;
-    
-    if (Val == 0 || Val == 1 || Val == 2 || Val == 4 || Val == 8 || Val == -1)
-      return true;
-
-    return false;
-  }
-  */
-
-  StringRef getToken() const {
-    assert(Kind == k_Tok && "Invalid access!");
-    return Tok;
-  }
-
-  unsigned getReg() const override {
-    assert(Kind == k_Reg && "Invalid access!");
-    return Reg;
-  }
-
-  /*
-  void setReg(unsigned RegNo) {
-    assert(Kind == k_Reg && "Invalid access!");
-    Reg = RegNo;
-  }
-  */
-
-  static std::unique_ptr<Mups16Operand> CreateToken(StringRef Str, SMLoc S) {
-    return std::make_unique<Mups16Operand>(Str, S);
-  }
-
-  static std::unique_ptr<Mups16Operand> CreateReg(unsigned RegNum, SMLoc S,
-                                                  SMLoc E) {
-    return std::make_unique<Mups16Operand>(k_Reg, RegNum, S, E);
-  }
-
-  static std::unique_ptr<Mups16Operand> CreateImm(const MCExpr *Val, SMLoc S,
-                                                  SMLoc E) {
-    return std::make_unique<Mups16Operand>(Val, S, E);
-  }
-
-  static std::unique_ptr<Mups16Operand> CreateMem(unsigned RegNum,
-                                                  const MCExpr *Val,
-                                                  SMLoc S, SMLoc E) {
-    return std::make_unique<Mups16Operand>(RegNum, Val, S, E);
-  }
-
-  SMLoc getStartLoc() const override { return Start; }
-  SMLoc getEndLoc() const override { return End; }
-
-  void print(raw_ostream &O) const override {
-    auto regName = [](auto Reg) { return "$" + StringRef{Mups16RegStrings+Mups16RegDesc[Reg].Name}; };
-    switch (Kind) {
-    case k_Tok:
-      O << "Token " << Tok;
-      break;
-    case k_Reg:
-      O << "Register " << regName(Reg);
-      break;
-    case k_Imm:
-      O << "Immediate " << *Imm;
-      break;
-    case k_Mem:
-      O << "Memory ";
-      O << *Mem.Offset << "(" << regName(Reg) << ")";
-      break;
+        Inst.addOperand(MCOperand::createReg(Reg));
     }
-  }
+
+    void addExprOperand(MCInst &Inst, const MCExpr *Expr) const {
+        // Add as immediate when possible
+        if (!Expr)
+            Inst.addOperand(MCOperand::createImm(0));
+        else if (const MCConstantExpr *CE = dyn_cast<MCConstantExpr>(Expr))
+            Inst.addOperand(MCOperand::createImm(CE->getValue()));
+        else
+            Inst.addOperand(MCOperand::createExpr(Expr));
+    }
+
+    void addImmOperands(MCInst &Inst, unsigned N) const {
+        assert(N == 1 && "Invalid number of operands!");
+        addExprOperand(Inst, Imm);
+    }
+    void addImm5Operands(MCInst &Inst, unsigned N) const {
+        assert(N == 1 && "Invalid number of operands!");
+        addExprOperand(Inst, Imm);
+    }
+    void addImm8Operands(MCInst &Inst, unsigned N) const {
+        assert(N == 1 && "Invalid number of operands!");
+        addExprOperand(Inst, Imm);
+    }
+    void addUImm5Operands(MCInst &Inst, unsigned N) const {
+        assert(N == 1 && "Invalid number of operands!");
+        addExprOperand(Inst, Imm);
+    }
+    void addUImm8Operands(MCInst &Inst, unsigned N) const {
+        assert(N == 1 && "Invalid number of operands!");
+        addExprOperand(Inst, Imm);
+    }
+
+    void addMemOperands(MCInst &Inst, unsigned N) const {
+        assert(Kind == k_Mem && "Unexpected operand kind");
+        assert(N == 2 && "Invalid number of operands");
+
+        Inst.addOperand(MCOperand::createReg(Mem.Reg));
+        addExprOperand(Inst, Mem.Offset);
+    }
+
+    bool isReg()   const override { return Kind == k_Reg; }
+    bool isImm()   const override { return Kind == k_Imm; }
+    bool isToken() const override { return Kind == k_Tok; }
+    bool isMem()   const override { return Kind == k_Mem; }
+
+    bool isImm5() const {
+        if (!isImm())
+            return false;
+
+        const MCConstantExpr *ConstExpr = dyn_cast<MCConstantExpr>(Imm);
+        if (!ConstExpr)
+            return false;
+        int64_t Value = ConstExpr->getValue();
+        return isInt<5>(static_cast<int32_t>(Value));
+    }
+    bool isImm8() const {
+        if (!isImm())
+            return false;
+
+        const MCConstantExpr *ConstExpr = dyn_cast<MCConstantExpr>(Imm);
+        if (!ConstExpr)
+            return false;
+        int64_t Value = ConstExpr->getValue();
+        return isInt<8>(static_cast<int32_t>(Value));
+    }
+    bool isUImm5() const {
+        if (!isImm())
+            return false;
+
+        const MCConstantExpr *ConstExpr = dyn_cast<MCConstantExpr>(Imm);
+        if (!ConstExpr)
+            return false;
+        int64_t Value = ConstExpr->getValue();
+        return isUInt<5>(static_cast<int32_t>(Value));
+    }
+    bool isUImm8() const {
+        if (!isImm())
+            return false;
+
+        const MCConstantExpr *ConstExpr = dyn_cast<MCConstantExpr>(Imm);
+        if (!ConstExpr)
+            return false;
+        int64_t Value = ConstExpr->getValue();
+        return isUInt<8>(static_cast<int32_t>(Value));
+    }
+    bool isImm16() const {
+        if (!isImm())
+            return false;
+
+        const MCConstantExpr *ConstExpr = dyn_cast<MCConstantExpr>(Imm);
+        if (!ConstExpr)
+            return false;
+        int64_t Value = ConstExpr->getValue();
+        return isInt<16>(static_cast<int32_t>(Value));
+    }
+
+        /*
+           bool isIndReg()         const { return Kind == k_IndReg; }
+           bool isPostIndReg()     const { return Kind == k_PostIndReg; }
+
+           bool isCGImm() const {
+           if (Kind != k_Imm)
+           return false;
+
+           int64_t Val;
+           if (!Imm->evaluateAsAbsolute(Val))
+           return false;
+
+           if (Val == 0 || Val == 1 || Val == 2 || Val == 4 || Val == 8 || Val == -1)
+           return true;
+
+           return false;
+           }
+           */
+
+        StringRef getToken() const {
+            assert(Kind == k_Tok && "Invalid access!");
+            return Tok;
+        }
+
+    unsigned getReg() const override {
+        assert(Kind == k_Reg && "Invalid access!");
+        return Reg;
+    }
+
+    /*
+       void setReg(unsigned RegNo) {
+       assert(Kind == k_Reg && "Invalid access!");
+       Reg = RegNo;
+       }
+       */
+
+    static std::unique_ptr<Mups16Operand> CreateToken(StringRef Str, SMLoc S) {
+        return std::make_unique<Mups16Operand>(Str, S);
+    }
+
+    static std::unique_ptr<Mups16Operand> CreateReg(unsigned RegNum, SMLoc S,
+            SMLoc E) {
+        return std::make_unique<Mups16Operand>(k_Reg, RegNum, S, E);
+    }
+
+    static std::unique_ptr<Mups16Operand> CreateImm(const MCExpr *Val, SMLoc S,
+            SMLoc E) {
+        return std::make_unique<Mups16Operand>(Val, S, E);
+    }
+
+    static std::unique_ptr<Mups16Operand> CreateMem(unsigned RegNum,
+            const MCExpr *Val,
+            SMLoc S, SMLoc E) {
+        return std::make_unique<Mups16Operand>(RegNum, Val, S, E);
+    }
+
+    SMLoc getStartLoc() const override { return Start; }
+    SMLoc getEndLoc() const override { return End; }
+
+    void print(raw_ostream &O) const override {
+        auto regName = [](auto Reg) { return "$" + StringRef{Mups16RegStrings+Mups16RegDesc[Reg].Name}; };
+        switch (Kind) {
+            case k_Tok:
+                O << "Token " << Tok;
+                break;
+            case k_Reg:
+                O << "Register " << regName(Reg);
+                break;
+            case k_Imm:
+                O << "Immediate " << *Imm;
+                break;
+            case k_Mem:
+                O << "Memory ";
+                O << *Mem.Offset << "(" << regName(Reg) << ")";
+                break;
+        }
+    }
 };
 } // end anonymous namespace
 
