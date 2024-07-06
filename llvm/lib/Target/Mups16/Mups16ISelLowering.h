@@ -20,25 +20,28 @@
 
 namespace llvm {
 
+    // Custom instruction descriptions, I think?
+    namespace Mups16ISD
+    {
+      enum NodeType
+      {
+        // Start the numbering from where ISD NodeType finishes.
+        FIRST_NUMBER = ISD::BUILTIN_OP_END,
 
-	// Custom instruction descriptions, I think?
-	namespace Mups16ISD
-	{
-		enum NodeType
-		{
-			// Start the numbering from where ISD NodeType finishes.
-			FIRST_NUMBER = ISD::BUILTIN_OP_END,
+        // Jump and link (call)
+        JmpLink,
 
-			// Jump and link (call)
-			JmpLink,
+        // Return
+        Ret,
 
-			// Return
-			Ret,
+        // Load immediate >= 256 into register
+        LoadImm,
 
-            // Load immediate >= 256 into register
-            LoadImm
-		};
-	}
+        // Global addresses
+        Wrapper
+
+      };
+    }
 
     class Mups16Subtarget;
     class Mups16TargetLowering : public TargetLowering
@@ -66,6 +69,8 @@ namespace llvm {
 
 
         SDValue LowerOperation(SDValue Op, SelectionDAG &DAG) const override;
+
+        SDValue LowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
 
         /// isZExtFree - Return true if any actual instruction that defines a value
         /// of type Ty1 implicit zero-extends the value to Ty2 in the result

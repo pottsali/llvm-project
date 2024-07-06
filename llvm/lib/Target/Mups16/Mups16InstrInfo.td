@@ -113,6 +113,11 @@ def HI8 : SDNodeXForm<imm, [{
 }]>;
 
 
+// Wrapper for handling global addresses. These give us something to pattern
+// match on without ending up in a cycle (see
+// https://discourse.llvm.org/t/a-few-questions-from-a-newbie/12771/2)
+def Mups16Wrapper: SDNode<"Mups16ISD::Wrapper", SDTIntUnaryOp>;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Instruction definitions
 ////////////////////////////////////////////////////////////////////////////////
@@ -338,7 +343,7 @@ def PTSE : InstMupsR2<31,      3, (ins IntReg:$rs1, IntRegs:$rs2),
 ////////////////////////////////////////////////////////////////////////////////
 
 // Arbitrary immediate, for loading constants greater than 8-bit into a register
-def LoadImm:    MupsPseudo<(outs IntReg:$rdd), (ins imm16:$imm),
+def LoadImm:    MupsPseudo<(outs IntReg:$rdd), (ins i16imm:$imm),
                       [(set IntReg:$rdd, imm:$imm)]>;
 
 // Lowering will
@@ -348,5 +353,11 @@ def mups16_ret : SDNode<"Mups16ISD::Ret", SDTNone, [SDNPHasChain, SDNPOptInGlue,
 let isBarrier = 1, isReturn = 1, isTerminator = 1 in
 def RetRA:    MupsPseudo<(outs), (ins),
                       [(mups16_ret)]>;
+
+// Loading global variables. This converts a reference to a global address into
+// a call to a LI instruction to put the address into a register. This will then
+// be usable by the LW/SW/LB/SB patterns above
+def : Pat<(i16 (Mups16Wrapper tglobaladdr:$addr)), (LoadImm i16imm:$addr)>;
+
 
 

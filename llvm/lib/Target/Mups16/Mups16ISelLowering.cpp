@@ -150,7 +150,7 @@ Mups16TargetLowering::Mups16TargetLowering(const TargetMachine &TM,
     setCondCodeAction(ISD::SETULE, MVT::i16, Expand);
     setCondCodeAction(ISD::SETUGE, MVT::i16, Expand);
     setCondCodeAction(ISD::SETUGT, MVT::i16, Expand);
-    
+
 
 
 
@@ -321,13 +321,25 @@ Mups16TargetLowering::getRegForInlineAsmConstraint(
 // be efficiently implemented by just expanding.
 SDValue Mups16TargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const
 {
-    switch (Op.getOpcode())
-    {
-    }
-    return {};
+  switch (Op.getOpcode()) {
+    case ISD::GlobalAddress:    return LowerGlobalAddress(Op, DAG);
+    default:
+      llvm_unreachable("unimplemented operand");
+  }
+  return {};
 }
 
 
+SDValue Mups16TargetLowering::LowerGlobalAddress(SDValue Op,
+                                                 SelectionDAG &DAG) const {
+  const GlobalValue *GV = cast<GlobalAddressSDNode>(Op)->getGlobal();
+  int64_t Offset = cast<GlobalAddressSDNode>(Op)->getOffset();
+  auto PtrVT = getPointerTy(DAG.getDataLayout());
+
+  // Create the TargetGlobalAddress node, folding in the constant offset.
+  SDValue Result = DAG.getTargetGlobalAddress(GV, SDLoc(Op), PtrVT, Offset);
+  return DAG.getNode(Mups16ISD::Wrapper, SDLoc(Op), MVT::i16, Result);
+}
 
 //===----------------------------------------------------------------------===//
 //                      Calling Convention Implementation
@@ -336,15 +348,18 @@ SDValue Mups16TargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) cons
 #include "Mups16GenCallingConv.inc"
 
 bool Mups16TargetLowering::isZExtFree(Type *Ty1, Type *Ty2) const {
-    return false;
+  // TODO
+  return false;
 }
 
 bool Mups16TargetLowering::isZExtFree(EVT VT1, EVT VT2) const {
-    return false;
+  // TODO
+  return false;
 }
 
 bool Mups16TargetLowering::isZExtFree(SDValue Val, EVT VT2) const {
-    return false;
+  // TOOD
+  return false;
 }
 
 //===----------------------------------------------------------------------===//
@@ -364,7 +379,7 @@ SDValue Mups16TargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
     CallingConv::ID CallConv              = CLI.CallConv;
     bool isVarArg                         = CLI.IsVarArg;
 
-    // MSP430 target does not yet support tail call optimization.
+    // Mups16 target does not yet support tail call optimization.
     isTailCall = false;
 
     switch (CallConv) {
@@ -525,7 +540,7 @@ SDValue Mups16TargetLowering::LowerFormalArguments(SDValue Chain, CallingConv::I
 
 // Generate instructions to load incoming arguments from the stack
 SDValue Mups16TargetLowering::LowerCCCArguments(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
-    const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &dl, SelectionDAG &DAG, 
+    const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &dl, SelectionDAG &DAG,
     SmallVectorImpl<SDValue> &InVals) const
 {
     MachineFunction &MF = DAG.getMachineFunction();

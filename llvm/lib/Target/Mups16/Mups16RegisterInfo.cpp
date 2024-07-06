@@ -55,9 +55,8 @@ BitVector Mups16RegisterInfo::getReservedRegs(const MachineFunction &MF) const
 
     // FIXME: does this need to contain system registers? Or does the isAllocatable in the register
     // class handle that for us?
-    reserved.set(MUPS::Zero);
+    reserved.set(MUPS::R0);
     reserved.set(MUPS::SP);
-    reserved.set(getFrameRegister(MF));
     reserved.set(MUPS::RA);
 
     return reserved;
@@ -98,7 +97,8 @@ void Mups16RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     if (FrameIndex >= 0)
     {
         if (hasBasePointer(MF))
-            FrameReg = MUPS::FP;
+            // FIXME: this should go if we're removing the frame pointer
+            FrameReg = MUPS::R5;
         else if (needsStackRealignment(MF))
             FrameReg = MUPS::SP;
     }
@@ -190,6 +190,6 @@ bool Mups16RegisterInfo::hasBasePointer(const MachineFunction &MF) const
 
 Register Mups16RegisterInfo::getFrameRegister(const MachineFunction &MF) const
 {
-    return MUPS::FP;
+    return MUPS::R5;
 }
 

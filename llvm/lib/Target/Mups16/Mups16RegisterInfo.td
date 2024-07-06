@@ -20,13 +20,13 @@ class Mups16Reg<bits<3> num, string n> : Register<n> {
 class Ri<bits<3> Enc, string n> : Mups16Reg<Enc, n>;
 
 // Integer registers
-def Zero : Ri< 0, "zero">, DwarfRegNum<[0]>;
+def R0 : Ri< 0, "r0">, DwarfRegNum<[0]>;
 def R1 : Ri< 1, "r1">, DwarfRegNum<[1]>;
 def R2 : Ri< 2, "r2">, DwarfRegNum<[2]>;
 def R3 : Ri< 3, "r3">, DwarfRegNum<[3]>;
 def R4 : Ri< 4, "r4">, DwarfRegNum<[4]>;
 def SP : Ri< 5, "sp">, DwarfRegNum<[5]>;
-def FP : Ri< 6, "fp">, DwarfRegNum<[6]>;
+def R5 : Ri< 6, "r5">, DwarfRegNum<[6]>;
 def RA : Ri< 7, "ra">, DwarfRegNum<[7]>;
 
 // System registers (not generally visible to the user, but some instructions use them)
@@ -44,13 +44,13 @@ def FLG : Ri< 7, "flg">;
 // FIXME: the register order should be defined in terms of the preferred
 // allocation order...
 //
-def AllIntRegs : RegisterClass<"MUPS", [i16], 16, (add Zero, R1, R2, R3, R4, SP, FP, RA, SPC, S1, S2, S3, TSP, TMP, PC, FLG)>;
+def AllIntRegs : RegisterClass<"MUPS", [i16], 16, (add R0, R1, R2, R3, R4, SP, R5, RA, SPC, S1, S2, S3, TSP, TMP, PC, FLG)>;
 
-def IntRegs : RegisterClass<"MUPS", [i16], 16, (add Zero, R1, R2, R3, R4, SP, FP, RA)>;
+def IntRegs : RegisterClass<"MUPS", [i16], 16, (add R0, R1, R2, R3, R4, SP, R5, RA)>;
 def IntReg : RegisterOperand<IntRegs>;
 
 let isAllocatable = 0 in {
-  def SysRegs : RegisterClass<"MUPS", [i16], 16, (add Zero, SP, FP, RA, SPC, S1, S2, S3, TSP, TMP, PC, FLG)>;
+  def SysRegs : RegisterClass<"MUPS", [i16], 16, (add R0, SP, RA, SPC, S1, S2, S3, TSP, TMP, PC, FLG)>;
 }
 def SysReg : RegisterOperand<SysRegs>;
 

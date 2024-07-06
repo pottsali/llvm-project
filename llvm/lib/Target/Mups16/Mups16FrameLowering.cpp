@@ -56,7 +56,7 @@ void Mups16FrameLowering::determineFrameLayout(MachineFunction &MF) const
     MFI.setStackSize(FrameSize);
 }
 
-// Current convention: SP always points to the last element on the stack. 
+// Current convention: SP always points to the last element on the stack.
 // On function entry SP will point to the first argument that isn't passed in registers (currently,
 // that would be arguments 5 and later):
 //
@@ -66,7 +66,7 @@ void Mups16FrameLowering::determineFrameLayout(MachineFunction &MF) const
 // On entry, we save the old frame pointer, generate a new one pointing to the first word after the
 // function arguments, and decrement SP. If sp was 0x100 in the above diagram, our frame would end
 // up being:
-// 
+//
 // 0x102    arg5
 // 0x100    arg4
 // 0x09e    <old fp>    <- fp points here now
@@ -104,12 +104,12 @@ void Mups16FrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &M
     BuildMI(MBB, MBBI, DL, LII.get(MUPS::SW))
         .addReg(MUPS::SP)
         .addImm(-2)
-        .addReg(MUPS::FP)
+        .addReg(MUPS::R5)
         .setMIFlag(MachineInstr::FrameSetup);
 
     // Generate new FP
     // addi $fp, $sp, 4
-    BuildMI(MBB, MBBI, DL, LII.get(MUPS::ADDI), MUPS::FP)
+    BuildMI(MBB, MBBI, DL, LII.get(MUPS::ADDI), MUPS::R5)
         .addReg(MUPS::SP)
         .addImm(-2)
         .setMIFlag(MachineInstr::FrameSetup);
@@ -138,12 +138,12 @@ void Mups16FrameLowering::emitEpilogue(MachineFunction &MF, MachineBasicBlock &M
 
     // Restore the stack pointer using the callee's frame pointer value.
     BuildMI(MBB, MBBI, DL, LII.get(MUPS::ADDI), MUPS::SP)
-        .addReg(MUPS::FP)
+        .addReg(MUPS::R5)
         .addImm(0);
 
     // Restore the frame pointer from the stack.
-    BuildMI(MBB, MBBI, DL, LII.get(MUPS::LW), MUPS::FP)
-        .addReg(MUPS::FP)
+    BuildMI(MBB, MBBI, DL, LII.get(MUPS::LW), MUPS::R5)
+        .addReg(MUPS::R5)
         .addImm(-4);
 }
 
@@ -168,6 +168,7 @@ bool Mups16FrameLowering::restoreCalleeSavedRegisters(MachineBasicBlock &MBB,
 
 bool Mups16FrameLowering::hasFP(const MachineFunction &MF) const
 {
-    return true;
+    // TODO: I think this is correct? We don't want to burn a register from frame pointer
+    return false;
 }
 

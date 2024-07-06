@@ -14,10 +14,7 @@ def CC_Mups16 : CallingConv<[
   // Promote i8 arguments to i16.
   CCIfType<[i8], CCPromoteToType<i16>>,
 
-  // Assign the first two arguments to R1, R2
-  CCIfType<[i16], CCAssignToReg<[R1, R2]>>,
-
-  // Alternatively, they are assigned to the stack in 4-byte aligned units.
+  // All arguments are assigned to the stack in 2-byte aligned units.
   CCAssignToStack<2, 2>
 ]>;
 

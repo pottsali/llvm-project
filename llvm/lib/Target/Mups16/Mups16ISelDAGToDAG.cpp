@@ -30,7 +30,7 @@
 #include "llvm/Support/raw_ostream.h"
 using namespace llvm;
 
-#define DEBUG_TYPE "mups16-isel"
+#define DEBUG_TYPE "isel"
 
 /// Mups16DAGToDAGISel - Mups16 specific code to select Mups16 machine
 /// instructions for SelectionDAG operations.
@@ -86,7 +86,7 @@ void Mups16DAGToDAGISel::Select(SDNode *Node)
 bool Mups16DAGToDAGISel::selectAddr(SDValue Addr, SDValue &Base, SDValue &Offset)
 {
     EVT ValTy = Addr.getValueType();
-    
+
     // if Address is frame index, get the TargetFrameIndex.
     // FIXME: does this even make sense for Mups16?
     if (FrameIndexSDNode *FIN = dyn_cast<FrameIndexSDNode>(Addr))

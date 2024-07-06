@@ -141,7 +141,7 @@ void Mups16InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
 
     BuildMI(MBB, I, DL, get(Opc), DestReg)
         .addReg(SrcReg, getKillRegState(KillSrc))
-        .addReg(MUPS::Zero);
+        .addReg(MUPS::R0);
 }
 
 /*
