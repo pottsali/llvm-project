@@ -15,6 +15,8 @@
 #define LLVM_LIB_TARGET_MUPS16_MUPS16ISELLOWERING_H
 
 #include "Mups16.h"
+#include "MCTargetDesc/Mups16BaseInfo.h"
+#include "llvm/CodeGen/ISDOpcodes.h"
 #include "llvm/CodeGen/SelectionDAG.h"
 #include "llvm/CodeGen/TargetLowering.h"
 
@@ -35,7 +37,13 @@ namespace llvm {
         Ret,
 
         // Load immediate >= 256 into register
-        LoadImm,
+        //LoadImm,
+
+        // Load 8-bit immediate into high byte of register
+        LUI,
+
+        // Load 8-bit unsigned immediate value into register, zero'ing out top byte
+        LIU,
 
         // Global addresses
         Wrapper
@@ -85,6 +93,36 @@ namespace llvm {
         bool isZExtFree(SDValue Val, EVT VT2) const override;
 
         bool isLegalICmpImmediate(int64_t) const override;
+
+        // This method creates the following nodes, which are necessary for
+        // computing a symbol's address in non-PIC mode:
+        //
+        // (add %hi(sym), %lo(sym))
+        //
+        // This method covers O32, N32 and N64 in sym32 mode.
+        /*
+        template <class NodeTy>
+        SDValue getAddrNonPIC(NodeTy *N, const SDLoc &DL, EVT Ty,
+                              SelectionDAG &DAG) const {
+
+          SDValue Hi = DAG.getNode(Mups16ISD::Hi, DL, Ty, withTargetFlags(Op, HiTF, DAG));
+          SDValue Lo = DAG.getNode(Mups16ISD::Lo, DL, Ty, withTargetFlags(Op, LoTF, DAG));
+          return DAG.getNode(ISD::ADD, DL, VT, Hi, Lo);
+
+          //SDValue Hi = getTargetNode(N, Ty, DAG, Mups16::MO_ABS_HI);
+          //SDValue Lo = getTargetNode(N, Ty, DAG, Mups16::MO_ABS_LO);
+          SDValue bottom = DAG.getNode(ISD::EXTRACT_ELEMENT, DL, Ty, N, DAG.getIntPtrConstant(0, DL));
+          SDValue top = DAG.getNode(ISD::EXTRACT_ELEMENT, DL, Ty, N, DAG.getIntPtrConstant(1, DL));
+          return DAG.getNode(Mups16ISD::LUI, DL, Ty,
+                             DAG.getNode(Mups16ISD::LIU, DL, Ty, bottom),
+                             top);
+        }*/
+
+        SDValue withTargetFlags(SDValue Op, unsigned TF, SelectionDAG &DAG) const;
+        SDValue makeHiLoPair(SDValue Op, unsigned HiTF, unsigned LoTF,
+                              SelectionDAG &DAG) const;
+        SDValue makeAddress(SDValue Op, SelectionDAG &DAG) const;
+
 
     private:
 

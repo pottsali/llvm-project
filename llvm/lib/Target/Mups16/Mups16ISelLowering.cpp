@@ -330,15 +330,73 @@ SDValue Mups16TargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) cons
 }
 
 
+SDValue Mups16TargetLowering::withTargetFlags(SDValue Op, unsigned TF,
+                                             SelectionDAG &DAG) const {
+  if (const GlobalAddressSDNode *GA = dyn_cast<GlobalAddressSDNode>(Op))
+    return DAG.getTargetGlobalAddress(GA->getGlobal(),
+                                      SDLoc(GA),
+                                      GA->getValueType(0),
+                                      GA->getOffset(), TF);
+
+  if (const ConstantPoolSDNode *CP = dyn_cast<ConstantPoolSDNode>(Op))
+    return DAG.getTargetConstantPool(CP->getConstVal(), CP->getValueType(0),
+                                     CP->getAlign(), CP->getOffset(), TF);
+
+  if (const BlockAddressSDNode *BA = dyn_cast<BlockAddressSDNode>(Op))
+    return DAG.getTargetBlockAddress(BA->getBlockAddress(),
+                                     Op.getValueType(),
+                                     0,
+                                     TF);
+
+  if (const ExternalSymbolSDNode *ES = dyn_cast<ExternalSymbolSDNode>(Op))
+    return DAG.getTargetExternalSymbol(ES->getSymbol(),
+                                       ES->getValueType(0), TF);
+
+  llvm_unreachable("Unhandled address SDNode");
+}
+
+// Split Op into high and low parts according to HiTF and LoTF.
+// Return an ADD node combining the parts.
+SDValue Mups16TargetLowering::makeHiLoPair(SDValue Op,
+                                          unsigned HiTF, unsigned LoTF,
+                                          SelectionDAG &DAG) const {
+  SDLoc DL(Op);
+  EVT VT = Op.getValueType();
+  SDValue val = withTargetFlags(Op, 0, DAG);
+  //SDValue Hi = DAG.getNode(Mups16ISD::Hi, DL, VT, withTargetFlags(Op, HiTF, DAG));
+  //SDValue Lo = DAG.getNode(Mups16ISD::Lo, DL, VT, withTargetFlags(Op, LoTF, DAG));
+  return DAG.getNode(Mups16ISD::LUI, DL, VT,
+                     DAG.getNode(Mups16ISD::LIU, DL, VT, val),
+                     val);
+
+}
+
+
+// Build SDNodes for producing an address from a GlobalAddress, ConstantPool,
+// or ExternalSymbol SDNode.
+SDValue Mups16TargetLowering::makeAddress(SDValue Op, SelectionDAG &DAG) const {
+  SDLoc DL(Op);
+  EVT VT = getPointerTy(DAG.getDataLayout());
+
+  if (isPositionIndependent()) {
+    llvm_unreachable("PIC mode not supported");
+  }
+
+  switch(getTargetMachine().getCodeModel()) {
+  default:
+    llvm_unreachable("Unsupported absolute code model");
+  case CodeModel::Small:
+    // FIXME: this was VK_Sparc_HI/VK_Sparc_LO for the flags, which translates
+    // into %hi(...), %lo(...) in the output assembler. Not sure what we need to
+    // do here, but try nothing to start with.
+    //return makeHiLoPair(Op, 0, 0, DAG);
+    return withTargetFlags(Op, 0, DAG);
+  }
+}
+
 SDValue Mups16TargetLowering::LowerGlobalAddress(SDValue Op,
                                                  SelectionDAG &DAG) const {
-  const GlobalValue *GV = cast<GlobalAddressSDNode>(Op)->getGlobal();
-  int64_t Offset = cast<GlobalAddressSDNode>(Op)->getOffset();
-  auto PtrVT = getPointerTy(DAG.getDataLayout());
-
-  // Create the TargetGlobalAddress node, folding in the constant offset.
-  SDValue Result = DAG.getTargetGlobalAddress(GV, SDLoc(Op), PtrVT, Offset);
-  return DAG.getNode(Mups16ISD::Wrapper, SDLoc(Op), MVT::i16, Result);
+  return makeAddress(Op, DAG);
 }
 
 //===----------------------------------------------------------------------===//
@@ -726,8 +784,8 @@ const char *Mups16TargetLowering::getTargetNodeName(unsigned Opcode) const
             return "Mups16ISD::JmpLink";
         case Mups16ISD::Ret:
             return "Mups16ISD::Ret";
-        case Mups16ISD::LoadImm:
-            return "Mups16ISD::LoadImm";
+        //case Mups16ISD::LoadImm:
+        //    return "Mups16ISD::LoadImm";
     }
 
     return nullptr;

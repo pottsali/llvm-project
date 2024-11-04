@@ -356,9 +356,9 @@ bool Mups16InstrInfo::expandPostRAPseudo(MachineInstr &MI) const
         case MUPS::RetRA:
             expandRetRA(MBB, MI);
             break;
-        case MUPS::LoadImm:
-            expandLoadImm(MBB, MI);
-            break;
+        //case MUPS::LoadImm:
+        //    expandLoadImm(MBB, MI);
+        //    break;
     }
 
     MBB.erase(MI);
@@ -374,13 +374,15 @@ void Mups16InstrInfo::expandRetRA(MachineBasicBlock &MBB, MachineBasicBlock::ite
 
 void Mups16InstrInfo::expandLoadImm(MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const
 {
-    //FIXME
     auto& reg = I->getOperand(0);
+    auto val = I->getOperand(1).getImm();
+
+    // TODO: check size of val, and omit the LUI if it's < 256
     BuildMI(MBB, I, I->getDebugLoc(), get(MUPS::LIU))
         .addReg(reg.getReg())
-        .addImm(I->getOperand(1).getImm() & 0xff);
+        .addImm(val & 0xff);
     BuildMI(MBB, I, I->getDebugLoc(), get(MUPS::LUI))
         .addReg(reg.getReg())
-        .addImm((I->getOperand(1).getImm() >> 8) & 0xff);
+        .addImm((val >> 8) & 0xff);
 }
 

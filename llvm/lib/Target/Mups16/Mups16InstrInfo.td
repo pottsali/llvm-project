@@ -34,7 +34,8 @@ def uimm8 : Operand<i16>, PatLeaf<(imm), [{ return isUInt<8>(N->getZExtValue());
 
 def uimm11 : Operand<i16>
 {
-    //let PrintMethod = "printUImm<11>";
+  // TODO
+  //let PrintMethod = "printUImm<11>";
 }
 
 def Imm16AsmOperand : AsmOperandClass { let Name = "Imm16"; }
@@ -105,6 +106,7 @@ def addr: ComplexPattern<iPTR, 2, "selectAddr", [frameindex], []>;
 def LO8 : SDNodeXForm<imm, [{
   return CurDAG->getTargetConstant((uint64_t)N->getZExtValue() & 0xff, SDLoc(N), MVT::i16);
 }]>;
+def LIUimm : PatLeaf<(imm), [{ return isUInt<16>(N->getZExtValue()); }], LO8>;
 
 // Extract bits 8-15 (high byte) of an immediate value.
 // Transformation function: shift the immediate value down into the low bits.
@@ -112,6 +114,8 @@ def HI8 : SDNodeXForm<imm, [{
   return CurDAG->getTargetConstant((uint64_t)N->getZExtValue() >> 8, SDLoc(N), MVT::i16);
 }]>;
 
+// Immediate pattern that matches the high byte for the LUI instruction
+def LUIimm : PatLeaf<(imm), [{ return isShiftedUInt<8, 8>(N->getZExtValue()); }], HI8>;
 
 // Wrapper for handling global addresses. These give us something to pattern
 // match on without ending up in a cycle (see
@@ -209,10 +213,16 @@ def LI  : InstMupsIID<13, (outs IntReg:$rdd), (ins imm8:$imm8),
 def LIU : InstMupsIID<14, (outs IntReg:$rdd), (ins uimm8:$imm8),
                       "liu $rdd, $imm8",
                       [(set IntReg:$rdd, uimm8:$imm8)]>;
+
 //| LUI      | II   | 15     |    |  | `01111 RDD III III II` | `lui   r1, 0x01   ` | Load 8-bit immediate value into upper 8 bits of `RDD`. Lower 8 bits are unchanged |
-def LUI : InstMupsIID<15, (outs IntReg:$rdd), (ins uimm8:$imm8),
+// I think we want to leave the pattern deliberately empty here, since it can
+// only ever be safely used in conjunction with LIU (otherwise the bottom 8 bits
+// will be undefined).
+let Constraints = "$rs = $rdd" in {
+def LUI : InstMupsIID<15, (outs IntReg:$rdd), (ins IntRegs:$rs, uimm8:$imm8),
                       "lui $rdd, $imm8",
-                      [/*TODO*/]>;
+                      []>;
+}
 
 let mayStore = 1 in {
 //| SB       | I    | 16     |    |  | `10000 RS1 RS2 III II` | `sb    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store low byte in `RS2` to resulting memory address |
@@ -343,8 +353,21 @@ def PTSE : InstMupsR2<31,      3, (ins IntReg:$rs1, IntRegs:$rs2),
 ////////////////////////////////////////////////////////////////////////////////
 
 // Arbitrary immediate, for loading constants greater than 8-bit into a register
-def LoadImm:    MupsPseudo<(outs IntReg:$rdd), (ins i16imm:$imm),
-                      [(set IntReg:$rdd, imm:$imm)]>;
+//def LoadImm:    MupsPseudo<(outs IntReg:$rdd), (ins i16imm:$imm),
+//def LoadImm:    MupsPseudo<(outs IntReg:$rdd), (ins i32imm:$imm),
+//                      [(set IntReg:$rdd, imm:$imm)]>;
+
+def : Pat<(i16 imm:$imm), (LUI (LIU (LO8 imm:$imm)), (HI8 imm:$imm))>;
+//def : Pat<(i16 tglobaladdr:$in), (LUI (LIU (LO8 tglobaladdr:$in)), (HI8 tglobaladdr:$in))>;
+
+// Experiment: map these two custom nodes from Mups16ISD to the instructions defined above
+def LIUWrapper : SDNode<"Mups16ISD::LIU", SDTIntUnaryOp>;
+def LUIWrapper : SDNode<"Mups16ISD::LUI", SDTIntBinOp>;
+//def : Pat <(LIUWrapper imm:$imm), (LIU imm:$imm)>;
+//def : Pat <(LUIWrapper IntReg:$rdd, imm:$imm), (LUI i16:$rdd, imm:$imm)>;
+
+def : Pat <(LIUWrapper tglobaladdr:$in), (LIU tglobaladdr:$in)>;
+def : Pat <(LUIWrapper IntReg:$rdd, tglobaladdr:$in), (LUI i16:$rdd, tglobaladdr:$in)>;
 
 // Lowering will
 def mups16_ret : SDNode<"Mups16ISD::Ret", SDTNone, [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
@@ -357,7 +380,7 @@ def RetRA:    MupsPseudo<(outs), (ins),
 // Loading global variables. This converts a reference to a global address into
 // a call to a LI instruction to put the address into a register. This will then
 // be usable by the LW/SW/LB/SB patterns above
-def : Pat<(i16 (Mups16Wrapper tglobaladdr:$addr)), (LoadImm i16imm:$addr)>;
+//def : Pat<(i16 (Mups16Wrapper tglobaladdr:$addr)), (LoadImm i16imm:$addr)>;
 
 
 
