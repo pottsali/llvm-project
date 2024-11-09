@@ -21,28 +21,14 @@ namespace Mups16 {
 // in Mups16AsmBackend.cpp.
 //
 enum Fixups {
-  // A 32 bit absolute fixup.
-  fixup_32 = FirstTargetFixupKind,
-// Mups16 //  // A 10 bit PC relative fixup.
-// Mups16 //  fixup_10_pcrel,
-// Mups16 //  // A 16 bit absolute fixup.
-// Mups16 //  fixup_16,
-// Mups16 //  // A 16 bit PC relative fixup.
-// Mups16 //  fixup_16_pcrel,
-// Mups16 //  // A 16 bit absolute fixup for byte operations.
-// Mups16 //  fixup_16_byte,
-// Mups16 //  // A 16 bit PC relative fixup for command address.
-// Mups16 //  fixup_16_pcrel_byte,
-// Mups16 //  // A 10 bit PC relative fixup for complicated polymorphs.
-// Mups16 //  fixup_2x_pcrel,
-// Mups16 //  // A 16 bit relaxable fixup.
-// Mups16 //  fixup_rl_pcrel,
-// Mups16 //  // A 8 bit absolute fixup.
-// Mups16 //  fixup_8,
-// Mups16 //  // A 32 bit symbol difference fixup.
-// Mups16 //  fixup_sym_diff,
-// Mups16 //
-  // Marker
+  // 8-bit fixup corresponding to lo(foo)
+  fixup_mups6_lo8 = FirstTargetFixupKind,
+
+  // 8-bit fixup corresponding to hi(foo)
+  fixup_mups6_hi8,
+
+  // Should have pc-relative fixups for branches and jumps here, too
+
   LastTargetFixupKind,
   NumTargetFixupKinds = LastTargetFixupKind - FirstTargetFixupKind
 };

@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "Mups16ISelLowering.h"
+#include "MCTargetDesc/Mups16MCExpr.h"
 #include "Mups16.h"
 //#include "Mups16MachineFunctionInfo.h"
 #include "Mups16Subtarget.h"
@@ -359,22 +360,20 @@ SDValue Mups16TargetLowering::withTargetFlags(SDValue Op, unsigned TF,
 // Return an ADD node combining the parts.
 SDValue Mups16TargetLowering::makeHiLoPair(SDValue Op,
                                           unsigned HiTF, unsigned LoTF,
-                                          SelectionDAG &DAG) const {
-  SDLoc DL(Op);
-  EVT VT = Op.getValueType();
-  SDValue val = withTargetFlags(Op, 0, DAG);
-  //SDValue Hi = DAG.getNode(Mups16ISD::Hi, DL, VT, withTargetFlags(Op, HiTF, DAG));
-  //SDValue Lo = DAG.getNode(Mups16ISD::Lo, DL, VT, withTargetFlags(Op, LoTF, DAG));
-  return DAG.getNode(Mups16ISD::LUI, DL, VT,
-                     DAG.getNode(Mups16ISD::LIU, DL, VT, val),
-                     val);
-
+                                          SelectionDAG &DAG) const
+{
+    SDLoc DL(Op);
+    EVT VT = Op.getValueType();
+    SDValue Lo = DAG.getNode(Mups16ISD::LIU, DL, VT, withTargetFlags(Op, LoTF, DAG));
+    SDValue Hi = DAG.getNode(Mups16ISD::LUI, DL, VT, Lo, withTargetFlags(Op, HiTF, DAG));
+    return Hi;
 }
 
 
 // Build SDNodes for producing an address from a GlobalAddress, ConstantPool,
 // or ExternalSymbol SDNode.
-SDValue Mups16TargetLowering::makeAddress(SDValue Op, SelectionDAG &DAG) const {
+SDValue Mups16TargetLowering::makeAddress(SDValue Op, SelectionDAG &DAG) const
+{
   SDLoc DL(Op);
   EVT VT = getPointerTy(DAG.getDataLayout());
 
@@ -386,11 +385,7 @@ SDValue Mups16TargetLowering::makeAddress(SDValue Op, SelectionDAG &DAG) const {
   default:
     llvm_unreachable("Unsupported absolute code model");
   case CodeModel::Small:
-    // FIXME: this was VK_Sparc_HI/VK_Sparc_LO for the flags, which translates
-    // into %hi(...), %lo(...) in the output assembler. Not sure what we need to
-    // do here, but try nothing to start with.
-    //return makeHiLoPair(Op, 0, 0, DAG);
-    return withTargetFlags(Op, 0, DAG);
+    return makeHiLoPair(Op, Mups16MCExpr::VK_Mups_HI, Mups16MCExpr::VK_Mups_LO, DAG);
   }
 }
 

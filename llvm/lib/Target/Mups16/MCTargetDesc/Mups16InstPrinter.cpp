@@ -39,7 +39,7 @@ void Mups16InstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
   assert((Modifier == nullptr || Modifier[0] == 0) && "No modifiers supported");
   const MCOperand &Op = MI->getOperand(OpNo);
   if (Op.isReg()) {
-    O << '$' << getRegisterName(Op.getReg());
+    O << getRegisterName(Op.getReg());
   } else if (Op.isImm()) {
     O << Op.getImm();
   } else {
@@ -66,12 +66,16 @@ void Mups16InstPrinter::printMemOperand(const MCInst *MI, unsigned OpNo,
   const MCOperand &Base = MI->getOperand(OpNo);
   const MCOperand &Disp = MI->getOperand(OpNo+1);
 
+  O << "[";
   if (Disp.isExpr())
+  {
     Disp.getExpr()->print(O, &MAI);
-  else {
+  }
+  else
+  {
     assert(Disp.isImm() && "Expected immediate in displacement field");
     O << Disp.getImm();
   }
 
-  O << "($" << getRegisterName(Base.getReg()) << ')';
+  O << "]" << getRegisterName(Base.getReg());
 }

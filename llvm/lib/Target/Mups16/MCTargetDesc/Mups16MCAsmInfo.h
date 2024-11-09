@@ -1,30 +1,22 @@
-//===-- Mups16MCAsmInfo.h - Mups16 asm properties --------------*- C++ -*--===//
-//
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-//
-//===----------------------------------------------------------------------===//
-//
-// This file contains the declaration of the Mups16MCAsmInfo class.
-//
-//===----------------------------------------------------------------------===//
+#ifndef LLVM_LIB_TARGET_MUPS16_MCTARGETDESC_SPARCMCASMINFO_H
+#define LLVM_LIB_TARGET_MUPS16_MCTARGETDESC_SPARCMCASMINFO_H
 
-#ifndef LLVM_LIB_TARGET_MUPS16_MCTARGETDESC_MUPS16MCASMINFO_H
-#define LLVM_LIB_TARGET_MUPS16_MCTARGETDESC_MUPS16MCASMINFO_H
-
-#include "llvm/MC/MCAsmInfoELF.h"
+#include "llvm/MC/MCAsmInfo.h"
 
 namespace llvm {
+
 class Triple;
 
-class Mups16MCAsmInfo : public MCAsmInfoELF {
-  void anchor() override;
-
+// NOTE: this derives from MCAsmInfo, not MCAsmInfoELF, since I'm targeting
+// customasm output
+class Mups16MCAsmInfo : public MCAsmInfo
+{
 public:
-  explicit Mups16MCAsmInfo(const Triple &TT, const MCTargetOptions &Options);
+  explicit Mups16MCAsmInfo(const Triple &TheTriple);
+
+    bool shouldOmitSectionDirective(StringRef SectionName) const override { return true; }
 };
 
-} // namespace llvm
+} // end namespace llvm
 
-#endif
+#endif // LLVM_LIB_TARGET_MUPS16_MCTARGETDESC_SPARCMCASMINFO_H
