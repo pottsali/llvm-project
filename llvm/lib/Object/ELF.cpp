@@ -151,6 +151,12 @@ StringRef llvm::object::getELFRelocationTypeName(uint32_t Machine,
     default:
       break;
     }
+  case ELF::EM_MUPS16:
+    switch (Type) {
+#include "llvm/BinaryFormat/ELFRelocs/Mups16.def"
+    default:
+      break;
+    }
     break;
   default:
     break;

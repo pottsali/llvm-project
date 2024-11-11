@@ -32,19 +32,10 @@ protected:
                         const MCFixup &Fixup, bool IsPCRel) const override {
     // Translate fixup kind to ELF relocation type.
     switch (Fixup.getTargetKind()) {
-//    case FK_Data_1:                   return ELF::R_Mups16_8;
-//    case FK_Data_2:                   return ELF::R_Mups16_16_BYTE;
-//    case FK_Data_4:                   return ELF::R_Mups16_32;
-//    case Mups16::fixup_32:            return ELF::R_Mups16_32;
-//    case Mups16::fixup_10_pcrel:      return ELF::R_Mups16_10_PCREL;
-//    case Mups16::fixup_16:            return ELF::R_Mups16_16;
-//    case Mups16::fixup_16_pcrel:      return ELF::R_Mups16_16_PCREL;
-//    case Mups16::fixup_16_byte:       return ELF::R_Mups16_16_BYTE;
-//    case Mups16::fixup_16_pcrel_byte: return ELF::R_Mups16_16_PCREL_BYTE;
-//    case Mups16::fixup_2x_pcrel:      return ELF::R_Mups16_2X_PCREL;
-//    case Mups16::fixup_rl_pcrel:      return ELF::R_Mups16_RL_PCREL;
-//    case Mups16::fixup_8:             return ELF::R_Mups16_8;
-//    case Mups16::fixup_sym_diff:      return ELF::R_Mups16_SYM_DIFF;
+    case FK_Data_1:                   return ELF::R_MUPS16_8;
+    case FK_Data_2:                   return ELF::R_MUPS16_16;
+    case Mups16::fixup_mups16_lo8:    return ELF::R_MUPS16_LO8;
+    case Mups16::fixup_mups16_hi8:    return ELF::R_MUPS16_HI8;
     default:
       llvm_unreachable("Invalid fixup kind");
     }

@@ -49,8 +49,8 @@ Mups16::Fixups Mups16MCExpr::getFixupKind(Mups16MCExpr::VariantKind Kind)
 {
   switch (Kind) {
     default: llvm_unreachable("Unhandled Mups16MCExpr::VariantKind");
-    case VK_Mups_HI:      return Mups16::fixup_mups6_hi8;
-    case VK_Mups_LO:      return Mups16::fixup_mups6_lo8;
+    case VK_Mups_HI:      return Mups16::fixup_mups16_hi8;
+    case VK_Mups_LO:      return Mups16::fixup_mups16_lo8;
   }
 }
 bool Mups16MCExpr::evaluateAsRelocatableImpl(MCValue &Res,

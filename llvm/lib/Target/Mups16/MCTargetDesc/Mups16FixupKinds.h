@@ -22,10 +22,10 @@ namespace Mups16 {
 //
 enum Fixups {
   // 8-bit fixup corresponding to lo(foo)
-  fixup_mups6_lo8 = FirstTargetFixupKind,
+  fixup_mups16_lo8 = FirstTargetFixupKind,
 
   // 8-bit fixup corresponding to hi(foo)
-  fixup_mups6_hi8,
+  fixup_mups16_hi8,
 
   // Should have pc-relative fixups for branches and jumps here, too
 

@@ -8,21 +8,21 @@
 
 #include "MCTargetDesc/Mups16FixupKinds.h"
 #include "MCTargetDesc/Mups16MCTargetDesc.h"
-// MSP430 //#include "llvm/ADT/APInt.h"
+#include "llvm/ADT/APInt.h"
 #include "llvm/MC/MCAsmBackend.h"
-// MSP430 //#include "llvm/MC/MCAssembler.h"
-// MSP430 //#include "llvm/MC/MCContext.h"
-// MSP430 //#include "llvm/MC/MCDirectives.h"
+#include "llvm/MC/MCAssembler.h"
+#include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCDirectives.h"
 #include "llvm/MC/MCELFObjectWriter.h"
-// MSP430 //#include "llvm/MC/MCExpr.h"
-// MSP430 //#include "llvm/MC/MCFixupKindInfo.h"
-// MSP430 //#include "llvm/MC/MCObjectWriter.h"
-// MSP430 //#include "llvm/MC/MCSubtargetInfo.h"
-// MSP430 //#include "llvm/MC/MCSymbol.h"
-// MSP430 //#include "llvm/MC/MCTargetOptions.h"
-// MSP430 //#include "llvm/Support/ErrorHandling.h"
-// MSP430 //#include "llvm/Support/raw_ostream.h"
-// MSP430 //
+#include "llvm/MC/MCExpr.h"
+#include "llvm/MC/MCFixupKindInfo.h"
+#include "llvm/MC/MCObjectWriter.h"
+#include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/MC/MCSymbol.h"
+#include "llvm/MC/MCTargetOptions.h"
+#include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/raw_ostream.h"
+
 using namespace llvm;
 
 namespace {
@@ -61,8 +61,9 @@ public:
 // MSP430 //    return false;
 // MSP430 //  }
 // MSP430 //
-  unsigned getNumFixupKinds() const override {
-    return Mups16::NumTargetFixupKinds;
+  unsigned getNumFixupKinds() const override
+  {
+      return Mups16::NumTargetFixupKinds;
   }
 // MSP430 //
 // MSP430 //  const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override {
@@ -83,16 +84,17 @@ public:
 // MSP430 //    };
 // MSP430 //    static_assert((array_lengthof(Infos)) == Mups16::NumTargetFixupKinds,
 // MSP430 //                  "Not all fixup kinds added to Infos array");
-// MSP430 //  
+// MSP430 //
 // MSP430 //    if (Kind < FirstTargetFixupKind)
 // MSP430 //      return MCAsmBackend::getFixupKindInfo(Kind);
-// MSP430 //  
+// MSP430 //
 // MSP430 //    return Infos[Kind - FirstTargetFixupKind];
 // MSP430 //  }
 
   bool mayNeedRelaxation(const MCInst &Inst,
-                         const MCSubtargetInfo &STI) const override {
-    return false;
+                         const MCSubtargetInfo &STI) const override
+  {
+      return false;
   }
 
   bool writeNopData(raw_ostream &OS, uint64_t Count) const override;
@@ -127,29 +129,44 @@ public:
 // MSP430 //  }
 // MSP430 //}
 // MSP430 //
+static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value, MCContext &Ctx)
+{
+    unsigned Kind = Fixup.getKind();
+    switch (Kind)
+    {
+    case FK_Data_1:
+    case FK_Data_2:
+    case FK_Data_4:
+        return Value;
+    case Mups16::fixup_mups16_hi8:
+        Value = (Value >> 8) & 0xff; break;
+    case Mups16::fixup_mups16_lo8:
+        Value = Value & 0xff; break;
+    default:
+      llvm_unreachable("Unhandled fixup kind in Mups16AsmBackend::applyFixup");
+    }
+    return Value;
+}
+
 void Mups16AsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
                                   const MCValue &Target,
                                   MutableArrayRef<char> Data,
                                   uint64_t Value, bool IsResolved,
-                                  const MCSubtargetInfo *STI) const {
-// MSP430 //  Value = adjustFixupValue(Fixup, Value, Asm.getContext());
-// MSP430 //  MCFixupKindInfo Info = getFixupKindInfo(Fixup.getKind());
-// MSP430 //  if (!Value)
-// MSP430 //    return; // Doesn't change encoding.
-// MSP430 //
-// MSP430 //  // Shift the value into position.
-// MSP430 //  Value <<= Info.TargetOffset;
-// MSP430 //
-// MSP430 //  unsigned Offset = Fixup.getOffset();
-// MSP430 //  unsigned NumBytes = alignTo(Info.TargetSize + Info.TargetOffset, 8) / 8;
-// MSP430 //
-// MSP430 //  assert(Offset + NumBytes <= Data.size() && "Invalid fixup offset!");
-// MSP430 //
-// MSP430 //  // For each byte of the fragment that the fixup touches, mask in the
-// MSP430 //  // bits from the fixup value.
-// MSP430 //  for (unsigned i = 0; i != NumBytes; ++i) {
-// MSP430 //    Data[Offset + i] |= uint8_t((Value >> (i * 8)) & 0xff);
-// MSP430 //  }
+                                  const MCSubtargetInfo *STI) const
+{
+    MCFixupKind Kind = Fixup.getKind();
+    MCContext &Ctx = Asm.getContext();
+    Value = adjustFixupValue(Fixup, Value, Ctx);
+
+    if (!Value)
+    {
+        return; // Doesn't change encoding (we already encoded zero)
+    }
+
+    // We could get info on which bits change from the fixup, but so far we only
+    // have two cases, both of which just change the bottom byte of the
+    // instruction word, so we can hard-code this for now. Where do we start in
+    Data[1] = Value;
 }
 
 bool Mups16AsmBackend::writeNopData(raw_ostream &OS, uint64_t Count) const {

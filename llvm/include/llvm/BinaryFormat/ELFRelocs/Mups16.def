@@ -1,0 +1,10 @@
+
+#ifndef ELF_RELOC
+#error "ELF_RELOC must be defined"
+#endif
+
+ELF_RELOC(R_MUPS16_NONE,         0)
+ELF_RELOC(R_MUPS16_8,            1)
+ELF_RELOC(R_MUPS16_16,           2)
+ELF_RELOC(R_MUPS16_LO8,          3)
+ELF_RELOC(R_MUPS16_HI8,          4)

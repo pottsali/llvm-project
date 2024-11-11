@@ -772,6 +772,11 @@ enum {
 #include "ELFRelocs/VE.def"
 };
 
+// ELF Relocation type for Mups16.
+enum {
+#include "ELFRelocs/Mups16.def"
+};
+
 #undef ELF_RELOC
 
 // Section header.

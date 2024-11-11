@@ -9,20 +9,20 @@ Mups16MCAsmInfo::Mups16MCAsmInfo(const Triple& TheTriple)
     CommentString = ";";
     SupportsDebugInformation = false;
 
-    AsciiDirective = "#d\t";
-    AscizDirective = nullptr;
-    GlobalDirective = "; global symbol\t";
+    // AsciiDirective = "#d\t";
+    // AscizDirective = nullptr;
+    // GlobalDirective = "; global symbol\t";
 
-    Data8bitsDirective = "#d8\t";
-    Data16bitsDirective = "#d16\t";
-    Data32bitsDirective = "#d32\t";
+    // Data8bitsDirective = "#d8\t";
+    // Data16bitsDirective = "#d16\t";
+    // Data32bitsDirective = "#d32\t";
 
-    HasDotTypeDotSizeDirective = false;
-    HasSingleParameterDotFile = false;
+    // HasDotTypeDotSizeDirective = false;
+    // HasSingleParameterDotFile = false;
     AlignmentIsInBytes = false;
     IsLittleEndian = false;
     MaxInstLength = 2;
-    DollarIsPC = true;
+    // DollarIsPC = true;
 
     HasIdentDirective = false;
     PrivateGlobalPrefix = ".L";
