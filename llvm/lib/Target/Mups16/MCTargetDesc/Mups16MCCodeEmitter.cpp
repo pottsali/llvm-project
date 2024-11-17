@@ -13,13 +13,14 @@
 #include "Mups16.h"
 #include "MCTargetDesc/Mups16MCTargetDesc.h"
 #include "MCTargetDesc/Mups16FixupKinds.h"
+#include "MCTargetDesc/Mups16MCExpr.h"
 
 // MSP430 //#include "llvm/ADT/APFloat.h"
 // MSP430 //#include "llvm/ADT/SmallVector.h"
 #include "llvm/MC/MCCodeEmitter.h"
-// MSP430 //#include "llvm/MC/MCContext.h"
-// MSP430 //#include "llvm/MC/MCExpr.h"
-// MSP430 //#include "llvm/MC/MCFixup.h"
+#include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCExpr.h"
+#include "llvm/MC/MCFixup.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCInstrInfo.h"
 // MSP430 //#include "llvm/MC/MCRegisterInfo.h"
@@ -33,95 +34,90 @@
 namespace llvm {
 
 class Mups16MCCodeEmitter : public MCCodeEmitter {
-  MCContext &Ctx;
-  MCInstrInfo const &MCII;
-// MSP430 //
-// MSP430 //  // Offset keeps track of current word number being emitted
-// MSP430 //  // inside a particular instruction.
-// MSP430 //  mutable unsigned Offset;
-// MSP430 //
-  /// TableGen'erated function for getting the binary encoding for an
-  /// instruction.
-  uint64_t getBinaryCodeForInstr(const MCInst &MI,
-                                 SmallVectorImpl<MCFixup> &Fixups,
-                                 const MCSubtargetInfo &STI) const;
+    MCContext &Ctx;
+    MCInstrInfo const &MCII;
+    /// TableGen'erated function for getting the binary encoding for an
+    /// instruction.
+    uint64_t getBinaryCodeForInstr(const MCInst &MI,
+                                   SmallVectorImpl<MCFixup> &Fixups,
+                                   const MCSubtargetInfo &STI) const;
 
-  /// Returns the binary encoding of operands.
-  ///
-  /// If an operand requires relocation, the relocation is recorded
-  /// and zero is returned.
-  unsigned getMachineOpValue(const MCInst &MI, const MCOperand &MO,
-                             SmallVectorImpl<MCFixup> &Fixups,
-                             const MCSubtargetInfo &STI) const;
+    /// Returns the binary encoding of operands.
+    ///
+    /// If an operand requires relocation, the relocation is recorded
+    /// and zero is returned.
+    unsigned getMachineOpValue(const MCInst &MI, const MCOperand &MO,
+                               SmallVectorImpl<MCFixup> &Fixups,
+                               const MCSubtargetInfo &STI) const;
 
-// MSP430 //  unsigned getMemOpValue(const MCInst &MI, unsigned Op,
-// MSP430 //                         SmallVectorImpl<MCFixup> &Fixups,
-// MSP430 //                         const MCSubtargetInfo &STI) const;
-// MSP430 //
-// MSP430 //  unsigned getPCRelImmOpValue(const MCInst &MI, unsigned Op,
-// MSP430 //                              SmallVectorImpl<MCFixup> &Fixups,
-// MSP430 //                              const MCSubtargetInfo &STI) const;
-// MSP430 //
-// MSP430 //  unsigned getCGImmOpValue(const MCInst &MI, unsigned Op,
-// MSP430 //                           SmallVectorImpl<MCFixup> &Fixups,
-// MSP430 //                           const MCSubtargetInfo &STI) const;
-// MSP430 //
-// MSP430 //  unsigned getCCOpValue(const MCInst &MI, unsigned Op,
-// MSP430 //                        SmallVectorImpl<MCFixup> &Fixups,
-// MSP430 //                        const MCSubtargetInfo &STI) const;
-// MSP430 //
-//
-  // getBranchTargetOpValue - Return binary encoding of the branch
-  // target operand. If the machine operand requires relocation,
-  // record the relocation and return zero.
-  unsigned getBranchTargetOpValue(const MCInst &MI, unsigned OpNo,
-          SmallVectorImpl<MCFixup> &Fixups, const MCSubtargetInfo &STI) const;
+    // getBranchTargetOpValue - Return binary encoding of the branch
+    // target operand. If the machine operand requires relocation,
+    // record the relocation and return zero.
+    unsigned getBranchTargetOpValue(const MCInst &MI, unsigned OpNo,
+                                    SmallVectorImpl<MCFixup> &Fixups, const MCSubtargetInfo &STI) const;
 
 public:
-  Mups16MCCodeEmitter(MCContext &ctx, MCInstrInfo const &MCII)
-      : Ctx(ctx), MCII(MCII) {}
+    Mups16MCCodeEmitter(MCContext &ctx, MCInstrInfo const &MCII)
+    : Ctx(ctx), MCII(MCII) {}
 
-  void encodeInstruction(const MCInst &MI, raw_ostream &OS,
-                         SmallVectorImpl<MCFixup> &Fixups,
-                         const MCSubtargetInfo &STI) const override;
+    void encodeInstruction(const MCInst &MI, raw_ostream &OS,
+                           SmallVectorImpl<MCFixup> &Fixups,
+                           const MCSubtargetInfo &STI) const override;
 };
 
 void Mups16MCCodeEmitter::encodeInstruction(const MCInst &MI, raw_ostream &OS,
                                             SmallVectorImpl<MCFixup> &Fixups,
-                                            const MCSubtargetInfo &STI) const {
-  const MCInstrDesc &Desc = MCII.get(MI.getOpcode());
-  // Get byte count of instruction.
-  unsigned Size = Desc.getSize();
+                                            const MCSubtargetInfo &STI) const
+{
+    const MCInstrDesc &Desc = MCII.get(MI.getOpcode());
+    // Get byte count of instruction.
+    unsigned Size = Desc.getSize();
 
-// MSP430 //  // Initialize fixup offset
-// MSP430 //  Offset = 2;
+    // MSP430 //  // Initialize fixup offset
+    // MSP430 //  Offset = 2;
 
-  uint64_t BinaryOpCode = getBinaryCodeForInstr(MI, Fixups, STI);
-  size_t WordCount = Size / 2;
+    uint64_t BinaryOpCode = getBinaryCodeForInstr(MI, Fixups, STI);
+    size_t WordCount = Size / 2;
 
-  while (WordCount--) {
-    support::endian::write(OS, (uint16_t)BinaryOpCode, support::big);
-    BinaryOpCode >>= 16;
-  }
+    while (WordCount--)
+    {
+        support::endian::write(OS, (uint16_t)BinaryOpCode, support::big);
+        BinaryOpCode >>= 16;
+    }
 }
 
 unsigned Mups16MCCodeEmitter::getMachineOpValue(const MCInst &MI,
                                                 const MCOperand &MO,
                                                 SmallVectorImpl<MCFixup> &Fixups,
-                                                const MCSubtargetInfo &STI) const {
-// MSP430 //  if (MO.isReg())
-// MSP430 //    return Ctx.getRegisterInfo()->getEncodingValue(MO.getReg());
-// MSP430 //
-// MSP430 //  if (MO.isImm()) {
-// MSP430 //    Offset += 2;
-// MSP430 //    return MO.getImm();
-// MSP430 //  }
-// MSP430 //
-// MSP430 //  assert(MO.isExpr() && "Expected expr operand");
-// MSP430 //  Fixups.push_back(MCFixup::create(Offset, MO.getExpr(),
-// MSP430 //      static_cast<MCFixupKind>(Mups16::fixup_16_byte), MI.getLoc()));
-// MSP430 //  Offset += 2;
-  return 0;
+                                                const MCSubtargetInfo &STI) const
+{
+    if (MO.isReg())
+    {
+        return Ctx.getRegisterInfo()->getEncodingValue(MO.getReg());
+    }
+
+    if (MO.isImm())
+    {
+        return MO.getImm();
+    }
+
+    assert(MO.isExpr());
+    const MCExpr *Expr = MO.getExpr();
+    if (const Mups16MCExpr *SExpr = dyn_cast<Mups16MCExpr>(Expr))
+    {
+        MCFixupKind Kind = (MCFixupKind)SExpr->getFixupKind();
+        Fixups.push_back(MCFixup::create(0, Expr, Kind));
+        return 0;
+    }
+
+    int64_t Res;
+    if (Expr->evaluateAsAbsolute(Res))
+    {
+        return Res;
+    }
+
+    llvm_unreachable("Unhandled expression!");
+    return 0;
 }
 
 
@@ -139,13 +135,13 @@ unsigned Mups16MCCodeEmitter::getBranchTargetOpValue(const MCInst &MI, unsigned 
     assert(MO.isExpr() &&
             "getBranchTargetOpValue expects only expressions or immediates");
 
-    /*
-    // FIXME: Define our own fixups?
-    const MCExpr *FixupExpression = MCBinaryExpr::createAdd(
-            MO.getExpr(), MCConstantExpr::create(-4, Ctx), Ctx);
-    Fixups.push_back(MCFixup::create(0, FixupExpression,
-                MCFixupKind(Mips::fixup_Mips_PC16)));
-    */
+    // If the destination is an expression then it must be a fixup.
+    // For now we just create a simple branch fixup. How do we account for the
+    // fact that the offset has to be relative to PC + 2? The Mips backend
+    // seems to handle that with an expression in the fixup itself. Let's try
+    // just emitting the fixup as-is and worry about that later.
+    Fixups.push_back(MCFixup::create(0, MO.getExpr(),
+        (MCFixupKind)Mups16::fixup_mups16_br8));
     return 0;
 }
 
@@ -200,7 +196,7 @@ unsigned Mups16MCCodeEmitter::getBranchTargetOpValue(const MCInst &MI, unsigned 
 // MSP430 //                                              const MCSubtargetInfo &STI) const {
 // MSP430 //  const MCOperand &MO = MI.getOperand(Op);
 // MSP430 //  assert(MO.isImm() && "Expr operand expected");
-// MSP430 //  
+// MSP430 //
 // MSP430 //  int64_t Imm = MO.getImm();
 // MSP430 //  switch (Imm) {
 // MSP430 //  default:

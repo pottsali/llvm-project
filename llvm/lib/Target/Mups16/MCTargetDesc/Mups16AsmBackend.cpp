@@ -65,31 +65,26 @@ public:
   {
       return Mups16::NumTargetFixupKinds;
   }
-// MSP430 //
-// MSP430 //  const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override {
-// MSP430 //    const static MCFixupKindInfo Infos[Mups16::NumTargetFixupKinds] = {
-// MSP430 //      // This table must be in the same order of enum in Mups16FixupKinds.h.
-// MSP430 //      //
-// MSP430 //      // name            offset bits flags
-// MSP430 //      {"fixup_32",            0, 32, 0},
-// MSP430 //      {"fixup_10_pcrel",      0, 10, MCFixupKindInfo::FKF_IsPCRel},
-// MSP430 //      {"fixup_16",            0, 16, 0},
-// MSP430 //      {"fixup_16_pcrel",      0, 16, MCFixupKindInfo::FKF_IsPCRel},
-// MSP430 //      {"fixup_16_byte",       0, 16, 0},
-// MSP430 //      {"fixup_16_pcrel_byte", 0, 16, MCFixupKindInfo::FKF_IsPCRel},
-// MSP430 //      {"fixup_2x_pcrel",      0, 10, MCFixupKindInfo::FKF_IsPCRel},
-// MSP430 //      {"fixup_rl_pcrel",      0, 16, MCFixupKindInfo::FKF_IsPCRel},
-// MSP430 //      {"fixup_8",             0,  8, 0},
-// MSP430 //      {"fixup_sym_diff",      0, 32, 0},
-// MSP430 //    };
-// MSP430 //    static_assert((array_lengthof(Infos)) == Mups16::NumTargetFixupKinds,
-// MSP430 //                  "Not all fixup kinds added to Infos array");
-// MSP430 //
-// MSP430 //    if (Kind < FirstTargetFixupKind)
-// MSP430 //      return MCAsmBackend::getFixupKindInfo(Kind);
-// MSP430 //
-// MSP430 //    return Infos[Kind - FirstTargetFixupKind];
-// MSP430 //  }
+
+  const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override
+  {
+      const static MCFixupKindInfo Infos[Mups16::NumTargetFixupKinds] = {
+        // This table must be in the same order of enum in Mups16FixupKinds.h.
+        //
+        // name            offset bits flags
+        {"fixup_lo8",           0,   8, 0},
+        {"fixup_hi8",           0,   8, 0},
+        {"fixup_br8",           0,   8, MCFixupKindInfo::FKF_IsPCRel},
+        {"fixup_j11",           0,  11, MCFixupKindInfo::FKF_IsPCRel},
+      };
+      static_assert((array_lengthof(Infos)) == Mups16::NumTargetFixupKinds,
+                    "Not all fixup kinds added to Infos array");
+
+      if (Kind < FirstTargetFixupKind)
+        return MCAsmBackend::getFixupKindInfo(Kind);
+
+      return Infos[Kind - FirstTargetFixupKind];
+  }
 
   bool mayNeedRelaxation(const MCInst &Inst,
                          const MCSubtargetInfo &STI) const override
@@ -141,7 +136,10 @@ static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value, MCContext
     case Mups16::fixup_mups16_hi8:
         Value = (Value >> 8) & 0xff; break;
     case Mups16::fixup_mups16_lo8:
+    case Mups16::fixup_mups16_br8:
         Value = Value & 0xff; break;
+    case Mups16::fixup_mups16_j11:
+        Value = Value & 0x8ff; break;
     default:
       llvm_unreachable("Unhandled fixup kind in Mups16AsmBackend::applyFixup");
     }
@@ -169,15 +167,16 @@ void Mups16AsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
     Data[1] = Value;
 }
 
-bool Mups16AsmBackend::writeNopData(raw_ostream &OS, uint64_t Count) const {
-// MSP430 //  if ((Count % 2) != 0)
-// MSP430 //    return false;
-// MSP430 //
-// MSP430 //  // The canonical nop on Mups16 is mov #0, r3
-// MSP430 //  uint64_t NopCount = Count / 2;
-// MSP430 //  while (NopCount--)
-// MSP430 //    OS.write("\x03\x43", 2);
-// MSP430 //
+bool Mups16AsmBackend::writeNopData(raw_ostream &OS, uint64_t Count) const
+{
+  if ((Count % 2) != 0)
+    return false;
+
+  // The canonical nop on Mups16 is addi r0, r0, 0
+  uint64_t NopCount = Count / 2;
+  while (NopCount--)
+    OS.write("\x00\x00", 2);
+
   return true;
 }
 

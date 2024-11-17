@@ -36,6 +36,8 @@ protected:
     case FK_Data_2:                   return ELF::R_MUPS16_16;
     case Mups16::fixup_mups16_lo8:    return ELF::R_MUPS16_LO8;
     case Mups16::fixup_mups16_hi8:    return ELF::R_MUPS16_HI8;
+    case Mups16::fixup_mups16_br8:    return ELF::R_MUPS16_BR8;
+    case Mups16::fixup_mups16_j11:    return ELF::R_MUPS16_J11;
     default:
       llvm_unreachable("Invalid fixup kind");
     }

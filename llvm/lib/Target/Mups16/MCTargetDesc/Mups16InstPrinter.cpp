@@ -35,7 +35,8 @@ void Mups16InstPrinter::printInst(const MCInst *MI, uint64_t Address,
 }
 
 void Mups16InstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
-                                     raw_ostream &O, const char *Modifier) {
+                                     raw_ostream &O, const char *Modifier)
+{
   assert((Modifier == nullptr || Modifier[0] == 0) && "No modifiers supported");
   const MCOperand &Op = MI->getOperand(OpNo);
   if (Op.isReg()) {
@@ -62,20 +63,34 @@ void Mups16InstPrinter::printUImm(const MCInst *MI, int opNum, raw_ostream &O) {
 
 void Mups16InstPrinter::printMemOperand(const MCInst *MI, unsigned OpNo,
                                            raw_ostream &O,
-                                           const char *Modifier) {
-  const MCOperand &Base = MI->getOperand(OpNo);
-  const MCOperand &Disp = MI->getOperand(OpNo+1);
+                                           const char *Modifier)
+{
+    const MCOperand &Base = MI->getOperand(OpNo);
+    const MCOperand &Disp = MI->getOperand(OpNo+1);
 
-  O << "[";
-  if (Disp.isExpr())
-  {
-    Disp.getExpr()->print(O, &MAI);
-  }
-  else
-  {
-    assert(Disp.isImm() && "Expected immediate in displacement field");
-    O << Disp.getImm();
-  }
+    bool bracket = false;
+    if (Disp.isExpr())
+    {
+        Disp.getExpr()->print(O, &MAI);
+        bracket = true;
+    }
+    else
+    {
+        assert(Disp.isImm() && "Expected immediate in displacement field");
+        unsigned imm = Disp.getImm();
+        if (imm != 0)
+        {
+            bracket = true;
+            O << Disp.getImm();
+        }
+    }
 
-  O << "]" << getRegisterName(Base.getReg());
+    if (bracket)
+    {
+        O << "(" << getRegisterName(Base.getReg()) << ")";
+    }
+    else
+    {
+        O << getRegisterName(Base.getReg());
+    }
 }

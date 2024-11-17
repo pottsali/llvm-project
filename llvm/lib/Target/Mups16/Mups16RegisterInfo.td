@@ -15,10 +15,11 @@ class Mups16Reg<bits<3> num, string n> : Register<n> {
   let Namespace = "MUPS";
 }
 
-// Registers are identified with 5-bit ID numbers.
+// Registers are identified with 3-bit ID numbers.
 // Ri - 16-bit integer registers
 class Ri<bits<3> Enc, string n> : Mups16Reg<Enc, n>;
 
+// NOTE: keep these in sync with the list in Disassembler/Mups16Disassembler.cpp
 // Integer registers
 def R0 : Ri< 0, "r0">, DwarfRegNum<[0]>;
 def R1 : Ri< 1, "r1">, DwarfRegNum<[1]>;
@@ -30,14 +31,14 @@ def R5 : Ri< 6, "r5">, DwarfRegNum<[6]>;
 def RA : Ri< 7, "ra">, DwarfRegNum<[7]>;
 
 // System registers (not generally visible to the user, but some instructions use them)
-def SPC : Ri< 0, "spc">;
-def S1  : Ri< 1, "s1">;
-def S2  : Ri< 2, "s2">;
-def S3  : Ri< 3, "s3">;
-def TSP : Ri< 4, "tsp">;
-def TMP : Ri< 5, "tmp">;
-def PC  : Ri< 6, "pc">;
-def FLG : Ri< 7, "flg">;
+def SPC : Ri< 8, "spc">;
+def S1  : Ri< 9, "s1">;
+def S2  : Ri<10, "s2">;
+def S3  : Ri<11, "s3">;
+def TSP : Ri<12, "tsp">;
+def TMP : Ri<13, "tmp">;
+def PC  : Ri<14, "pc">;
+def FLG : Ri<15, "flg">;
 
 // Register classes.
 //
@@ -49,8 +50,14 @@ def AllIntRegs : RegisterClass<"MUPS", [i16], 16, (add R0, R1, R2, R3, R4, SP, R
 def IntRegs : RegisterClass<"MUPS", [i16], 16, (add R0, R1, R2, R3, R4, SP, R5, RA)>;
 def IntReg : RegisterOperand<IntRegs>;
 
+// Mark the RA and R0 registers as unallocatable, so they don't get picked as
+// general-purpose registers
 let isAllocatable = 0 in {
-  def SysRegs : RegisterClass<"MUPS", [i16], 16, (add R0, SP, RA, SPC, S1, S2, S3, TSP, TMP, PC, FLG)>;
+  def ReservedReg : RegisterClass<"MUPS", [i16], 16, (add R0, RA)>;
+}
+
+let isAllocatable = 0 in {
+  def SysRegs : RegisterClass<"MUPS", [i16], 16, (add SPC, S1, S2, S3, TSP, TMP, PC, FLG)>;
 }
 def SysReg : RegisterOperand<SysRegs>;
 

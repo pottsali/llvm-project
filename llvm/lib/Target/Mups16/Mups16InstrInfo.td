@@ -49,20 +49,22 @@ def MemAsmOperand : AsmOperandClass {
   let Name = "Mem";
 }
 
-def memsrc : Operand<i16> {
+def memsrc : Operand<OtherVT> {
   let PrintMethod = "printMemOperand";
   let MIOperandInfo = (ops IntReg, imm5);
   let ParserMatchClass = MemAsmOperand;
+  let OperandType = "OPERAND_MEMORY";
   //let EncoderMethod = "getMemOpValue";
-  //let DecoderMethod = "DecodeMemOperand";
+  let DecoderMethod = "DecodeMemOperand";
 }
 
-def memdst : Operand<i16> {
+def Memdst : Operand<OtherVT> {
   let PrintMethod = "printMemOperand";
   let MIOperandInfo = (ops IntReg, imm5);
   let ParserMatchClass = MemAsmOperand;
+  let OperandType = "OPERAND_MEMORY";
 //  let EncoderMethod = "getMemOpValue";
-//  let DecoderMethod = "DecodeMemOperand";
+  let DecoderMethod = "DecodeMemOperand";
 }
 
 // Branch operands
@@ -137,34 +139,35 @@ def Mups16Wrapper: SDNode<"Mups16ISD::Wrapper", SDTIntUnaryOp>;
 //| Name     | Type | Opcode | Fn |  | Bits                   | Asm Example         | Summary
 //|----------|------|--------|----|--|------------------------|---------------------| -----------
 //| ADDI     | I    | 0      |    |  | `00000 RDD RS1 III II` | `addi  sp, sp, -4 ` | Add 5-bit immediate to `RS1`, store in `RDD` |
-def ADDI  : InstMupsI<0, (outs IntReg:$rdd), (ins IntReg:$rs1, imm5:$imm5),
+def ADDI  : InstMupsID1<0, (outs IntReg:$rdd), (ins IntReg:$rs1, imm5:$imm5),
                       "addi $rdd, $rs1, $imm5",
                       [(set i16:$rdd, (add i16:$rs1, i16:$imm5))]>;
 //| ADDIU    | I    | 1      |    |  | `00001 RDD RS1 III II` | `addiu sp, sp, 18 ` | Add 5-bit unsigned immediate to `RS1`, store in `RDD` |
-def ADDIU : InstMupsI<1, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
+def ADDIU : InstMupsID1<1, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
                       "addiu $rdd, $rs1, $imm5",
                       [/*TODO(set i16:$rdd, (add i16:$rs1, i8:$imm5))*/]>;
 //| ANDI     | I    | 2      |    |  | `00010 RDD RS1 III II` | `andi  r1, r2, 0x1` | Bitwise AND of 5-bit immediate with `RS1`, store in `RDD` |
-def ANDI  : InstMupsI<2, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
+def ANDI  : InstMupsID1<2, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
                       "andi $rdd, $rs1, $imm5",
                       [/*TODO(set i16:$rdd, (and i16:$rs1, i8:$imm5))*/]>;
 //| ORI      | I    | 3      |    |  | `00011 RDD RS1 III II` | `ori   r1, r2, 0x1` | Bitwise OR of 5-bit immediate with `RS1`, store in `RDD` |
-def ORI   : InstMupsI<3, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
+def ORI   : InstMupsID1<3, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
                       "ori $rdd, $rs1, $imm5",
                       [/*TODO(set i16:$rdd, (or i16:$rs1, i8:$imm5))*/]>;
 //| XORI     | I    | 4      |    |  | `00100 RDD RS1 III II` | `xori  r1, r2, 0x1` | Bitwise XOR of 5-bit immediate with `RS1`, store in `RDD` |
-def XORI  : InstMupsI<4, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
+def XORI  : InstMupsID1<4, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
                       "xori $rdd, $rs1, $imm5",
                       [/*TODO(set i16:$rdd, (xor i16:$rs1, i8:$imm5))*/]>;
 //| NORI     | I    | 5      |    |  | `00101 RDD RS1 III II` | `nori  r1, r2, 0x1` | Bitwise NOR of 5-bit immediate with `RS1`, store in `RDD` |
-def NORI  : InstMupsI<5, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
+def NORI  : InstMupsID1<5, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
                       "nori $rdd, $rs1, $imm5",
                       [/*TODO*/]>;
-//| J        | J    | 6      |    |  | `00110 III III III II` | `j     0x07fe     ` | Unconditional jump to 11-bit immediate address (top 5 bits of destination come from existing `PC`) |
+//| J        | J    | 6      |    |  | `00110 III III III II` | `j     0x07fe     ` | Unconditional jump to 11-bit immediate offset from PC |
+// FIXME: this shouldn't use brtarget, since that needs a different fixup type
 def J     : InstMupsJ<6, (ins brtarget:$imm11),
                       "j $imm11",
                       [(br bb:$imm11)]>;
-//| JAL      | J    | 7      |    |  | `00111 III III III II` | `jal   0x07fe     ` | Store `PC` into `RA` and jump to 11-bit immediate address (top 5 bits of destination come from existing `PC`) |
+//| JAL      | J    | 7      |    |  | `00111 III III III II` | `jal   0x07fe     ` | Store `PC` into `RA` and jump to 11-bit immediate offset from PC |
 def JAL   : InstMupsJ<7, (ins uimm11:$imm11),
                       "jal $imm11",
                       [/*TODO*/]>;
@@ -224,13 +227,13 @@ def LUI : InstMupsIID<15, (outs IntReg:$rdd), (ins IntRegs:$rs, uimm8:$imm8),
                       []>;
 }
 
-let mayStore = 1 in {
+let mayStore = 1, DecoderMethod = "DecodeStore" in {
 //| SB       | I    | 16     |    |  | `10000 RS1 RS2 III II` | `sb    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store low byte in `RS2` to resulting memory address |
-def SB   : InstMupsI2<16, (ins IntReg:$rs2, memdst:$dst),
+def SB   : InstMupsI2<16, (ins Memdst:$dst, IntReg:$rs2),
                       "sb $dst, $rs2",
                       [(truncstorei8 IntReg:$rs2, addr:$dst)]>;
 //| SW       | I    | 17     |    |  | `10001 RS1 RS2 III II` | `sw    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store two-byte word `RS2` to resulting memory address |
-def SW   : InstMupsI2<17, (ins memdst:$dst, IntReg:$rs2),
+def SW   : InstMupsI2<17, (ins Memdst:$dst, IntReg:$rs2),
                       "sw $dst, $rs2",
                       [(store_a (i16 IntReg:$rs2), addr:$dst)]>;
 }
@@ -239,12 +242,12 @@ def SW   : InstMupsI2<17, (ins memdst:$dst, IntReg:$rs2),
 //| _unused_ |      | 19     |    |  | `10011               ` |                     | |
 
 //| BZ       | II   | 20     |    |  | `10100 RS1 III III II` | `bz    r1, -26    ` | Branch to `PC` plus 8-bit immediate if `RS1` is zero |
-def BZ  : InstMupsII1<20, (ins IntReg:$rs1, brtarget:$offset),
+def BZ  : InstMupsII1<22, (ins IntReg:$rs1, brtarget:$offset),
                       "bz $rs1, $offset",
                       [(brcond (i16 (seteq IntReg:$rs1, 0)), bb:$offset)]>;
 
 //| BNZ      | II   | 21     |    |  | `10101 RS1 III III II` | `bnz   r1, -26    ` | Branch to `PC` plus 8-bit immediate if `RS1` is not zero |
-def BNZ : InstMupsII1<20, (ins IntReg:$rs1, brtarget:$offset),
+def BNZ : InstMupsII1<23, (ins IntReg:$rs1, brtarget:$offset),
                       "bnz $rs1, $offset",
                       [(brcond (i16 (setne IntReg:$rs1, 0)), bb:$offset)]>;
 

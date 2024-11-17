@@ -21,16 +21,23 @@ namespace Mups16 {
 // in Mups16AsmBackend.cpp.
 //
 enum Fixups {
-  // 8-bit fixup corresponding to lo(foo)
-  fixup_mups16_lo8 = FirstTargetFixupKind,
+    // 8-bit fixup corresponding to %lo(foo)
+    fixup_mups16_lo8 = FirstTargetFixupKind,
 
-  // 8-bit fixup corresponding to hi(foo)
-  fixup_mups16_hi8,
+    // 8-bit fixup corresponding to %hi(foo)
+    fixup_mups16_hi8,
 
-  // Should have pc-relative fixups for branches and jumps here, too
+    // 8-bit pc-relative fixup, used when we don't know what the target of a
+    // branch will be yet
+    fixup_mups16_br8,
 
-  LastTargetFixupKind,
-  NumTargetFixupKinds = LastTargetFixupKind - FirstTargetFixupKind
+    // 11-bit pc-relative fixup, used when we don't know what the target of a
+    // jump will be yet
+    fixup_mups16_j11,
+
+    // Should have pc-relative fixups for branches and jumps here, too
+    LastTargetFixupKind,
+    NumTargetFixupKinds = LastTargetFixupKind - FirstTargetFixupKind
 };
 } // end namespace Mups16
 } // end namespace llvm
