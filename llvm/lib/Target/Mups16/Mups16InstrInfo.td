@@ -53,7 +53,6 @@ def memsrc : Operand<OtherVT> {
   let PrintMethod = "printMemOperand";
   let MIOperandInfo = (ops IntReg, imm5);
   let ParserMatchClass = MemAsmOperand;
-  let OperandType = "OPERAND_MEMORY";
   //let EncoderMethod = "getMemOpValue";
   let DecoderMethod = "DecodeMemOperand";
 }
@@ -77,7 +76,7 @@ def Mups16BranchTargetAsmOperand : AsmOperandClass {
 
 def brtarget    : Operand<OtherVT> {
   let EncoderMethod = "getBranchTargetOpValue";
-  let OperandType = "OPERAND_PCREL";
+  //let OperandType = "OPERAND_PCREL";
   let DecoderMethod = "DecodeBranchTarget";
   let ParserMatchClass = Mups16BranchTargetAsmOperand;
 }
@@ -124,6 +123,8 @@ def LUIimm : PatLeaf<(imm), [{ return isShiftedUInt<8, 8>(N->getZExtValue()); }]
 // https://discourse.llvm.org/t/a-few-questions-from-a-newbie/12771/2)
 def Mups16Wrapper: SDNode<"Mups16ISD::Wrapper", SDTIntUnaryOp>;
 
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Instruction definitions
 ////////////////////////////////////////////////////////////////////////////////
@@ -164,13 +165,11 @@ def NORI  : InstMupsID1<5, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
                       [/*TODO*/]>;
 //| J        | J    | 6      |    |  | `00110 III III III II` | `j     0x07fe     ` | Unconditional jump to 11-bit immediate offset from PC |
 // FIXME: this shouldn't use brtarget, since that needs a different fixup type
+let isBranch = 1, isTerminator = 1 in {
 def J     : InstMupsJ<6, (ins brtarget:$imm11),
                       "j $imm11",
                       [(br bb:$imm11)]>;
 //| JAL      | J    | 7      |    |  | `00111 III III III II` | `jal   0x07fe     ` | Store `PC` into `RA` and jump to 11-bit immediate offset from PC |
-def JAL   : InstMupsJ<7, (ins uimm11:$imm11),
-                      "jal $imm11",
-                      [/*TODO*/]>;
 
 // FIXME: these really don't need to be type II instructions (offsets on a JR call are probably not
 // very useful). Make them R-type, and free up a couple more slots for shifts by immediates.
@@ -178,10 +177,20 @@ def JAL   : InstMupsJ<7, (ins uimm11:$imm11),
 def JR  : InstMupsII1<8, (ins memsrc:$src),
                       "jr  $src",
                       [/*TODO*/]>;
+
+let Defs = [RA] in {
+def JAL   : InstMupsJ<7, (ins uimm11:$imm11),
+                      "jal $imm11",
+                      [/*TODO*/]>;
+
 //| JALR     | II   | 9      |    |  | `01001 RDD III III II` | `jalr  r1, 0x2    ` | Store `PC` into `RA`, add 8-bit immediate to `RS1` and jump to result |
 def JALR: InstMupsII1<9, (ins memsrc:$src),
                       "jalr $src",
                       [/*TODO*/]>;
+} // end of nested jal block
+
+} // end of jump block
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -189,7 +198,7 @@ def JALR: InstMupsII1<9, (ins memsrc:$src),
 ////////////////////////////////////////////////////////////////////////////////
 
 
-let mayLoad=1 in {
+let mayLoad = 1, DecoderMethod = "DecodeLoad" in {
 
 //| LB       | I    | 10     |    |  | `01010 RDD RS1 III II` | `lb    r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load single byte from resulting memory address into `RDD`, with sign extension of bit 7 |
 def LB  : InstMupsID1<10, (outs IntReg:$rdd), (ins memsrc:$src),
@@ -242,6 +251,7 @@ def SW   : InstMupsI2<17, (ins Memdst:$dst, IntReg:$rs2),
 //| _unused_ |      | 19     |    |  | `10011               ` |                     | |
 
 //| BZ       | II   | 20     |    |  | `10100 RS1 III III II` | `bz    r1, -26    ` | Branch to `PC` plus 8-bit immediate if `RS1` is zero |
+let isBranch = 1, isTerminator = 1 in {
 def BZ  : InstMupsII1<22, (ins IntReg:$rs1, brtarget:$offset),
                       "bz $rs1, $offset",
                       [(brcond (i16 (seteq IntReg:$rs1, 0)), bb:$offset)]>;
@@ -251,6 +261,7 @@ def BNZ : InstMupsII1<23, (ins IntReg:$rs1, brtarget:$offset),
                       "bnz $rs1, $offset",
                       [(brcond (i16 (setne IntReg:$rs1, 0)), bb:$offset)]>;
 
+}
 //| _unused_ |      | 22     |    |  | `10110               ` |                     | |
 //| _unused_ |      | 23     |    |  | `10111               ` |                     | |
 

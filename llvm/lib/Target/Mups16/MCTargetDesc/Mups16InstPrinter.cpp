@@ -77,11 +77,11 @@ void Mups16InstPrinter::printMemOperand(const MCInst *MI, unsigned OpNo,
     else
     {
         assert(Disp.isImm() && "Expected immediate in displacement field");
-        unsigned imm = Disp.getImm();
-        if (imm != 0)
+        auto Imm = Disp.getImm();
+        if (Imm != 0)
         {
             bracket = true;
-            O << Disp.getImm();
+            O << Imm;
         }
     }
 

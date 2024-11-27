@@ -72,25 +72,27 @@ extern "C" void LLVMInitializeMups16Disassembler()
 // Mups16InstrInfo.td. We need to forward declare these because the generated
 // decodeInstruction function will refer to them.
 //////////////////////////////////////////////////////////////////////////////////
-static DecodeStatus DecodeMemOperand(MCInst &Inst,
+namespace {
+DecodeStatus DecodeMemOperand(MCInst &Inst,
                                      unsigned RegNo,
                                      uint64_t Address,
                                      const void *Decoder);
 
-static DecodeStatus DecodeLoad(MCInst &Inst, unsigned Insn,
+DecodeStatus DecodeLoad(MCInst &Inst, unsigned Insn,
     uint64_t Address, const void *Decoder);
 
-static DecodeStatus DecodeStore(MCInst &Inst, unsigned Insn,
+DecodeStatus DecodeStore(MCInst &Inst, unsigned Insn,
     uint64_t Address, const void *Decoder);
 
-static DecodeStatus DecodeIntRegsRegisterClass(MCInst &Inst, unsigned RegNo,
+DecodeStatus DecodeIntRegsRegisterClass(MCInst &Inst, unsigned RegNo,
     uint64_t Address, const void *Decoder);
 
-static DecodeStatus DecodeSysRegsRegisterClass(MCInst &Inst, unsigned RegNo,
+DecodeStatus DecodeSysRegsRegisterClass(MCInst &Inst, unsigned RegNo,
     uint64_t Address, const void *Decoder);
 
-static DecodeStatus DecodeBranchTarget(MCInst &Inst, unsigned Offset,
+DecodeStatus DecodeBranchTarget(MCInst &Inst, unsigned Offset,
     uint64_t Address, const void *Decoder);
+}
 
 #include "Mups16GenDisassemblerTables.inc"
 
@@ -142,10 +144,10 @@ static unsigned getRegField(unsigned Instruction)
 }
 
 template <unsigned Bits>
-static unsigned getImmField(unsigned Instruction)
+static int getImmField(unsigned Instruction)
 {
-    int16_t Ret = Instruction << (16 - Bits);
-    return Ret >> (16 - Bits);
+    unsigned imm = fieldFromInstruction(Instruction, 0, Bits);
+    return SignExtend32<Bits>(imm);
 }
 
 template <unsigned Bits>
@@ -154,8 +156,10 @@ static unsigned getUImmField(unsigned Instruction)
     return Instruction & ((1 << Bits) - 1);
 }
 
+namespace {
+
 // Decode the whole of a load instruction, since I can't work out how to get the memory operand to decode automatically
-static DecodeStatus DecodeLoad(MCInst &Inst, unsigned Insn,
+DecodeStatus DecodeLoad(MCInst &Inst, unsigned Insn,
     uint64_t Address, const void *Decoder)
 {
     Inst.addOperand(MCOperand::createReg(RegisterTable[getRegField<0>(Insn)]));
@@ -163,16 +167,16 @@ static DecodeStatus DecodeLoad(MCInst &Inst, unsigned Insn,
     Inst.addOperand(MCOperand::createImm(getImmField<5>(Insn)));
     return MCDisassembler::Success;
 }
-static DecodeStatus DecodeStore(MCInst &Inst, unsigned Insn,
+DecodeStatus DecodeStore(MCInst &Inst, unsigned Insn,
     uint64_t Address, const void *Decoder)
 {
     Inst.addOperand(MCOperand::createReg(RegisterTable[getRegField<0>(Insn)]));
-    Inst.addOperand(MCOperand::createReg(RegisterTable[getRegField<1>(Insn)]));
     Inst.addOperand(MCOperand::createImm(getImmField<5>(Insn)));
+    Inst.addOperand(MCOperand::createReg(RegisterTable[getRegField<1>(Insn)]));
     return MCDisassembler::Success;
 }
 
-static DecodeStatus DecodeMemOperand(MCInst &Inst, unsigned Insn,
+DecodeStatus DecodeMemOperand(MCInst &Inst, unsigned Insn,
     uint64_t Address, const void *Decoder)
 {
     // Memory operands consist of
@@ -185,24 +189,25 @@ static DecodeStatus DecodeMemOperand(MCInst &Inst, unsigned Insn,
 
 // Note: if you don't override the DecoderMethod then the auto-generated code
 // seems to call functions based on the operand types
-static DecodeStatus DecodeIntRegsRegisterClass(MCInst &Inst, unsigned RegNo,
+DecodeStatus DecodeIntRegsRegisterClass(MCInst &Inst, unsigned RegNo,
     uint64_t Address, const void *Decoder)
 {
     Inst.addOperand(MCOperand::createReg(RegisterTable[RegNo]));
     return MCDisassembler::Success;
 }
 
-static DecodeStatus DecodeSysRegsRegisterClass(MCInst &Inst, unsigned RegNo,
+DecodeStatus DecodeSysRegsRegisterClass(MCInst &Inst, unsigned RegNo,
     uint64_t Address, const void *Decoder)
 {
     Inst.addOperand(MCOperand::createReg(RegisterTable[RegNo+8]));
     return MCDisassembler::Success;
 }
 
-static DecodeStatus DecodeBranchTarget(MCInst &Inst, unsigned Offset,
+DecodeStatus DecodeBranchTarget(MCInst &Inst, unsigned Offset,
     uint64_t Address, const void *Decoder)
 {
     Inst.addOperand(MCOperand::createImm((SignExtend32<8>(Offset) * 2) + 2));
     return MCDisassembler::Success;
 }
 
+}
