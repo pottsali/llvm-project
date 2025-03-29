@@ -21,24 +21,24 @@ class Ri<bits<3> Enc, string n> : Mups16Reg<Enc, n>;
 
 // NOTE: keep these in sync with the list in Disassembler/Mups16Disassembler.cpp
 // Integer registers
-def R0 : Ri< 0, "r0">, DwarfRegNum<[0]>;
-def R1 : Ri< 1, "r1">, DwarfRegNum<[1]>;
-def R2 : Ri< 2, "r2">, DwarfRegNum<[2]>;
-def R3 : Ri< 3, "r3">, DwarfRegNum<[3]>;
-def R4 : Ri< 4, "r4">, DwarfRegNum<[4]>;
-def SP : Ri< 5, "sp">, DwarfRegNum<[5]>;
-def R5 : Ri< 6, "r5">, DwarfRegNum<[6]>;
-def RA : Ri< 7, "ra">, DwarfRegNum<[7]>;
+def R0 : Ri<0, "r0">, DwarfRegNum<[0]>;
+def R1 : Ri<1, "r1">, DwarfRegNum<[1]>;
+def R2 : Ri<2, "r2">, DwarfRegNum<[2]>;
+def R3 : Ri<3, "r3">, DwarfRegNum<[3]>;
+def R4 : Ri<4, "r4">, DwarfRegNum<[4]>;
+def SP : Ri<5, "sp">, DwarfRegNum<[5]>;
+def R5 : Ri<6, "r5">, DwarfRegNum<[6]>;
+def RA : Ri<7, "ra">, DwarfRegNum<[7]>;
 
 // System registers (not generally visible to the user, but some instructions use them)
-def SPC : Ri< 8, "spc">;
-def S1  : Ri< 9, "s1">;
-def S2  : Ri<10, "s2">;
-def S3  : Ri<11, "s3">;
-def TSP : Ri<12, "tsp">;
-def TMP : Ri<13, "tmp">;
-def PC  : Ri<14, "pc">;
-def FLG : Ri<15, "flg">;
+def SPC : Ri<0, "spc">;
+def S1  : Ri<1, "s1">;
+def S2  : Ri<2, "s2">;
+def S3  : Ri<3, "s3">;
+def TSP : Ri<4, "tsp">;
+def TMP : Ri<5, "tmp">;
+def PC  : Ri<6, "pc">;
+def FLG : Ri<7, "flg">;
 
 // Register classes.
 //

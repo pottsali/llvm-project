@@ -14,7 +14,7 @@ class Mups16MCAsmInfo : public MCAsmInfo
 public:
   explicit Mups16MCAsmInfo(const Triple &TheTriple);
 
-    bool shouldOmitSectionDirective(StringRef SectionName) const override { return true; }
+    //bool shouldOmitSectionDirective(StringRef SectionName) const override { return true; }
 };
 
 } // end namespace llvm

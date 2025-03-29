@@ -49,7 +49,7 @@ def MemAsmOperand : AsmOperandClass {
   let Name = "Mem";
 }
 
-def memsrc : Operand<OtherVT> {
+def memsrc : Operand<i16> {
   let PrintMethod = "printMemOperand";
   let MIOperandInfo = (ops IntReg, imm5);
   let ParserMatchClass = MemAsmOperand;
@@ -57,7 +57,7 @@ def memsrc : Operand<OtherVT> {
   let DecoderMethod = "DecodeMemOperand";
 }
 
-def Memdst : Operand<OtherVT> {
+def Memdst : Operand<i16> {
   let PrintMethod = "printMemOperand";
   let MIOperandInfo = (ops IntReg, imm5);
   let ParserMatchClass = MemAsmOperand;
