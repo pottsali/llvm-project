@@ -25,6 +25,7 @@
 #include "llvm/MC/MCInstrInfo.h"
 // MSP430 //#include "llvm/MC/MCRegisterInfo.h"
 // MSP430 //#include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/EndianStream.h"
 #include "llvm/Support/raw_ostream.h"
@@ -71,19 +72,14 @@ void Mups16MCCodeEmitter::encodeInstruction(const MCInst &MI, raw_ostream &OS,
 {
     const MCInstrDesc &Desc = MCII.get(MI.getOpcode());
     // Get byte count of instruction.
-    unsigned Size = Desc.getSize();
-
-    // MSP430 //  // Initialize fixup offset
-    // MSP430 //  Offset = 2;
+    assert(Desc.getSize() == 2);
 
     uint64_t BinaryOpCode = getBinaryCodeForInstr(MI, Fixups, STI);
-    size_t WordCount = Size / 2;
+    DEBUG_WITH_TYPE("codeemit", dbgs() << "Binary for instruction: ");
+    DEBUG_WITH_TYPE("codeemit", dbgs().write_hex(BinaryOpCode));
+    DEBUG_WITH_TYPE("codeemit", dbgs() << "\n");
 
-    while (WordCount--)
-    {
-        support::endian::write(OS, (uint16_t)BinaryOpCode, support::big);
-        BinaryOpCode >>= 16;
-    }
+    support::endian::write(OS, (uint16_t)BinaryOpCode, support::big);
 }
 
 unsigned Mups16MCCodeEmitter::getMachineOpValue(const MCInst &MI,

@@ -10,14 +10,15 @@
 //  Declarations that describe the Mups16 register file
 //===----------------------------------------------------------------------===//
 
-class Mups16Reg<bits<3> num, string n> : Register<n> {
-  field bits<3> Num = num;
+class Mups16Reg<bits<16> num, string n> : Register<n> {
+  //field bits<3> Num = num;
+  let HWEncoding = num;
   let Namespace = "MUPS";
 }
 
 // Registers are identified with 3-bit ID numbers.
 // Ri - 16-bit integer registers
-class Ri<bits<3> Enc, string n> : Mups16Reg<Enc, n>;
+class Ri<bits<16> Enc, string n> : Mups16Reg<Enc, n>;
 
 // NOTE: keep these in sync with the list in Disassembler/Mups16Disassembler.cpp
 // Integer registers
@@ -45,7 +46,7 @@ def FLG : Ri<7, "flg">;
 // FIXME: the register order should be defined in terms of the preferred
 // allocation order...
 //
-def AllIntRegs : RegisterClass<"MUPS", [i16], 16, (add R0, R1, R2, R3, R4, SP, R5, RA, SPC, S1, S2, S3, TSP, TMP, PC, FLG)>;
+//def AllIntRegs : RegisterClass<"MUPS", [i16], 16, (add R0, R1, R2, R3, R4, SP, R5, RA, SPC, S1, S2, S3, TSP, TMP, PC, FLG)>;
 
 def IntRegs : RegisterClass<"MUPS", [i16], 16, (add R0, R1, R2, R3, R4, SP, R5, RA)>;
 def IntReg : RegisterOperand<IntRegs>;

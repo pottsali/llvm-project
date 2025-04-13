@@ -238,11 +238,11 @@ def LUI : InstMupsIID<15, (outs IntReg:$rdd), (ins IntRegs:$rs, uimm8:$imm8),
 
 let mayStore = 1, DecoderMethod = "DecodeStore" in {
 //| SB       | I    | 16     |    |  | `10000 RS1 RS2 III II` | `sb    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store low byte in `RS2` to resulting memory address |
-def SB   : InstMupsI2<16, (ins Memdst:$dst, IntReg:$rs2),
+def SB   : InstMupsMemI2<16, (ins Memdst:$dst, IntReg:$rs2),
                       "sb $dst, $rs2",
                       [(truncstorei8 IntReg:$rs2, addr:$dst)]>;
 //| SW       | I    | 17     |    |  | `10001 RS1 RS2 III II` | `sw    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store two-byte word `RS2` to resulting memory address |
-def SW   : InstMupsI2<17, (ins Memdst:$dst, IntReg:$rs2),
+def SW   : InstMupsMemI2<17, (ins Memdst:$dst, IntReg:$rs2),
                       "sw $dst, $rs2",
                       [(store_a (i16 IntReg:$rs2), addr:$dst)]>;
 }
@@ -335,13 +335,13 @@ def SYSCALL:InstMupsR1<30,     1, (ins IntRegs:$rs1),
                       "syscall $rs1",
                       []>;
 //| MFS      | R    | 30     | 2  |  | `11110 RDD RS1 000 10` | `mfs r1, s1       ` | Move from system reg. Move contents of `RS1` to register `RDD`+8 |
-def MFS  : InstMupsR2<30,      2, (ins IntRegs:$rs1, SysRegs:$rs2),
-                      "mfs $rs1, $rs2",
-                      []>;
+//def MFS  : InstMupsR2<30,      2, (ins IntRegs:$rs1, SysRegs:$rs2),
+//                      "mfs $rs1, $rs2",
+//                      []>;
 //| MTS      | R    | 30     | 3  |  | `11110 RDD RS1 000 11` | `mts s1, r1       ` | Move to system reg. Move contents of register `RDD`+8 to `RS1` |
-def MTS  : InstMupsR2<30,      3, (ins SysRegs:$rs1, IntRegs:$rs2),
-                      "mts $rs1, $rs2",
-                      []>;
+//def MTS  : InstMupsR2<30,      3, (ins SysRegs:$rs1, IntRegs:$rs2),
+//                      "mts $rs1, $rs2",
+//                      []>;
 //| PTRI     | R    | 31     | 0  |  | `11111 RDD 000 000 00` | `ptri r1          ` | Read current page table index into `RDD` |
 def PTRI : InstMupsRD<31,      0, (outs IntRegs:$rdd), (ins),
                       "ptri $rdd",

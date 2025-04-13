@@ -80,6 +80,17 @@ class InstMupsI2<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
     let Inst{7-5} = rs2;
 }
 
+class InstMupsMemI2<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
+  : InstMups<opcode, (outs), ins, asmstr, pattern>
+{
+    bits<3> rs1;
+    bits<5> imm5;
+    bits<3> rs2;
+    let Inst{10-8} = rs1;
+    let Inst{4-0} = imm5;
+    let Inst{7-5} = rs2;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // II-type instructions, with one dest register and an 8-bit immediate
 ////////////////////////////////////////////////////////////////////////////////
