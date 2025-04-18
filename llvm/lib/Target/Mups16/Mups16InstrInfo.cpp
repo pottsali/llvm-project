@@ -369,7 +369,10 @@ bool Mups16InstrInfo::expandPostRAPseudo(MachineInstr &MI) const
 
 void Mups16InstrInfo::expandRetRA(MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const
 {
-    BuildMI(MBB, I, I->getDebugLoc(), get(MUPS::JR)).addReg(MUPS::RA).addImm(0);
+    BuildMI(MBB, I, I->getDebugLoc(), get(MUPS::JR))
+        .addImm(0)
+        .addReg(MUPS::RA)
+    ;
 }
 
 void Mups16InstrInfo::expandLoadImm(MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const

@@ -57,6 +57,13 @@ class Mups16MCCodeEmitter : public MCCodeEmitter {
     unsigned getBranchTargetOpValue(const MCInst &MI, unsigned OpNo,
                                     SmallVectorImpl<MCFixup> &Fixups, const MCSubtargetInfo &STI) const;
 
+    // getJumpTargetOpValue - Return binary encoding of the jump
+    // target operand. If the machine operand requires relocation,
+    // record the relocation and return zero.
+    unsigned getJumpTargetOpValue(const MCInst &MI, unsigned OpNo,
+                                    SmallVectorImpl<MCFixup> &Fixups, const MCSubtargetInfo &STI) const;
+
+
 public:
     Mups16MCCodeEmitter(MCContext &ctx, MCInstrInfo const &MCII)
     : Ctx(ctx), MCII(MCII) {}
@@ -122,10 +129,10 @@ unsigned Mups16MCCodeEmitter::getBranchTargetOpValue(const MCInst &MI, unsigned 
 {
     const MCOperand &MO = MI.getOperand(OpNo);
 
-    // If the destination is an immediate, divide by 2.
+    // If the destination is an immediate subtract 2 (since PC is already incremented) and divide by 2.
     if (MO.isImm())
     {
-        return MO.getImm() >> 1;
+        return (MO.getImm() - 2) >> 1;
     }
 
     assert(MO.isExpr() &&
@@ -141,6 +148,29 @@ unsigned Mups16MCCodeEmitter::getBranchTargetOpValue(const MCInst &MI, unsigned 
     return 0;
 }
 
+unsigned Mups16MCCodeEmitter::getJumpTargetOpValue(const MCInst &MI, unsigned OpNo,
+        SmallVectorImpl<MCFixup> &Fixups, const MCSubtargetInfo &STI) const
+{
+    const MCOperand &MO = MI.getOperand(OpNo);
+
+    // If the destination is an immediate, divide by 2.
+    if (MO.isImm())
+    {
+        return MO.getImm() >> 1;
+    }
+
+    assert(MO.isExpr() &&
+            "getJumpTargetOpValue expects only expressions or immediates");
+
+    // If the destination is an expression then it must be a fixup.
+    // For now we just create a simple branch fixup. How do we account for the
+    // fact that the offset has to be relative to PC + 2? The Mips backend
+    // seems to handle that with an expression in the fixup itself. Let's try
+    // just emitting the fixup as-is and worry about that later.
+    Fixups.push_back(MCFixup::create(0, MO.getExpr(),
+        (MCFixupKind)Mups16::fixup_mups16_j11));
+    return 0;
+}
 
 // MSP430 //unsigned Mups16MCCodeEmitter::getMemOpValue(const MCInst &MI, unsigned Op,
 // MSP430 //                                            SmallVectorImpl<MCFixup> &Fixups,

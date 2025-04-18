@@ -70,15 +70,32 @@ def Memdst : Operand<i16> {
 def Mups16BranchTargetAsmOperand : AsmOperandClass {
   let Name = "BranchTarget";
   //let ParserMethod = "parseJumpTarget";
-  let PredicateMethod = "isImm8";
+  let PredicateMethod = "isImm8";   // used in asm parsing only?
   let RenderMethod = "addImm8Operands";
 }
 
 def brtarget    : Operand<OtherVT> {
   let EncoderMethod = "getBranchTargetOpValue";
-  //let OperandType = "OPERAND_PCREL";
+  let OperandType = "OPERAND_PCREL";
   let DecoderMethod = "DecodeBranchTarget";
   let ParserMatchClass = Mups16BranchTargetAsmOperand;
+}
+
+// Operand type for the target of j and jal instructions. Separate from the one
+// above because it needs a different encoder method so we can record an 11-bit
+// fixup, not an 8-bit one
+def Mups16JumpTargetAsmOperand : AsmOperandClass {
+  let Name = "JumpTarget";
+  //let ParserMethod = "parseJumpTarget";
+  let PredicateMethod = "isImm11";
+  let RenderMethod = "addImm11Operands";
+}
+
+def jtarget    : Operand<OtherVT> {
+  let EncoderMethod = "getJumpTargetOpValue";
+  let OperandType = "OPERAND_PCREL";
+  let DecoderMethod = "DecodeJumpTarget";
+  let ParserMatchClass = Mups16JumpTargetAsmOperand;
 }
 
 // Pattern fragments for loads and stores
@@ -164,22 +181,22 @@ def NORI  : InstMupsID1<5, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
                       "nori $rdd, $rs1, $imm5",
                       [/*TODO*/]>;
 //| J        | J    | 6      |    |  | `00110 III III III II` | `j     0x07fe     ` | Unconditional jump to 11-bit immediate offset from PC |
-// FIXME: this shouldn't use brtarget, since that needs a different fixup type
+//| JAL      | J    | 7      |    |  | `00111 III III III II` | `jal   0x07fe     ` | Store `PC` into `RA` and jump to 11-bit immediate offset from PC |
+//| JR       | II   | 8      |    |  | `01000 RDD III III II` | `jr    ra, 0      ` | Add 8-bit immediate to `RDD` and jump to result |
+
 let isBranch = 1, isTerminator = 1 in {
-def J     : InstMupsJ<6, (ins brtarget:$imm11),
+def J     : InstMupsJ<6, (ins jtarget:$imm11),
                       "j $imm11",
                       [(br bb:$imm11)]>;
-//| JAL      | J    | 7      |    |  | `00111 III III III II` | `jal   0x07fe     ` | Store `PC` into `RA` and jump to 11-bit immediate offset from PC |
 
 // FIXME: these really don't need to be type II instructions (offsets on a JR call are probably not
 // very useful). Make them R-type, and free up a couple more slots for shifts by immediates.
-//| JR       | II   | 8      |    |  | `01000 RDD III III II` | `jr    ra, 0      ` | Add 8-bit immediate to `RDD` and jump to result |
 def JR  : InstMupsII1<8, (ins memsrc:$src),
                       "jr  $src",
                       [/*TODO*/]>;
 
 let Defs = [RA] in {
-def JAL   : InstMupsJ<7, (ins uimm11:$imm11),
+def JAL   : InstMupsJ<7, (ins jtarget:$imm11),
                       "jal $imm11",
                       [/*TODO*/]>;
 

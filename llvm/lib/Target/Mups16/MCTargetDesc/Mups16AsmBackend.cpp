@@ -136,10 +136,12 @@ static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value, MCContext
     case Mups16::fixup_mups16_hi8:
         Value = (Value >> 8) & 0xff; break;
     case Mups16::fixup_mups16_lo8:
-    case Mups16::fixup_mups16_br8:
         Value = Value & 0xff; break;
+    // These have -2 because PC is already incremented, so encoded offsets need to be 2 less than actual byte offset
+    case Mups16::fixup_mups16_br8:
+        Value = ((Value - 2) >> 1) & 0xff; break;
     case Mups16::fixup_mups16_j11:
-        Value = Value & 0x8ff; break;
+        Value = ((Value - 2) >> 1) & 0x7ff; break;
     default:
       llvm_unreachable("Unhandled fixup kind in Mups16AsmBackend::applyFixup");
     }
@@ -155,16 +157,21 @@ void Mups16AsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
     MCFixupKind Kind = Fixup.getKind();
     MCContext &Ctx = Asm.getContext();
     Value = adjustFixupValue(Fixup, Value, Ctx);
+    unsigned NumBytes = 2; // always a single word, for now
 
     if (!Value)
     {
-        return; // Doesn't change encoding (we already encoded zero)
+        // Value is already zero in the output stream, so don't need to change
+        // anything.
+        return;
     }
 
-    // We could get info on which bits change from the fixup, but so far we only
-    // have two cases, both of which just change the bottom byte of the
-    // instruction word, so we can hard-code this for now. Where do we start in
-    Data[1] = Value;
+    // We need to 'or' in the fixed-up value with the existing values. For everything except jump immediates we could just modify the second byte, but jump offsets are 11 bits, so they affect the first byte too.
+    for (unsigned i = 0; i != NumBytes; ++i) {
+        // Little endian, so we have to or in the bits from the top down
+        unsigned idx = NumBytes - i - 1;
+        Data[Fixup.getOffset() + i] |= uint8_t((Value >> (idx*8)) & 0xff);
+    }
 }
 
 bool Mups16AsmBackend::writeNopData(raw_ostream &OS, uint64_t Count) const

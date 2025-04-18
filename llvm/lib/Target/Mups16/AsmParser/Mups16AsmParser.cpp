@@ -158,6 +158,10 @@ class Mups16Operand : public MCParsedAsmOperand
         assert(N == 1 && "Invalid number of operands!");
         addExprOperand(Inst, Imm);
     }
+    void addImm11Operands(MCInst &Inst, unsigned N) const {
+        assert(N == 1 && "Invalid number of operands!");
+        addExprOperand(Inst, Imm);
+    }
 
     void addMemOperands(MCInst &Inst, unsigned N) const {
         assert(Kind == k_Mem && "Unexpected operand kind");
@@ -172,6 +176,7 @@ class Mups16Operand : public MCParsedAsmOperand
     bool isToken() const override { return Kind == k_Tok; }
     bool isMem()   const override { return Kind == k_Mem; }
 
+    // FIXME: templatise this to avoid repetition
     bool isImm5() const {
         if (!isImm())
             return false;
@@ -211,6 +216,16 @@ class Mups16Operand : public MCParsedAsmOperand
             return false;
         int64_t Value = ConstExpr->getValue();
         return isUInt<8>(static_cast<int32_t>(Value));
+    }
+    bool isImm11() const {
+        if (!isImm())
+            return false;
+
+        const MCConstantExpr *ConstExpr = dyn_cast<MCConstantExpr>(Imm);
+        if (!ConstExpr)
+            return false;
+        int64_t Value = ConstExpr->getValue();
+        return isInt<11>(static_cast<int32_t>(Value));
     }
     bool isImm16() const {
         if (!isImm())

@@ -882,6 +882,10 @@ void MCAssembler::layout(MCAsmLayout &Layout) {
       }
     }
   }
+  DEBUG_WITH_TYPE("mc-dump", {
+      errs() << "assembler backend - post-fixups\n--\n";
+      dump(); });
+
 }
 
 void MCAssembler::Finish() {
