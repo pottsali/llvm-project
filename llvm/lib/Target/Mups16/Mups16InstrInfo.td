@@ -49,10 +49,11 @@ def MemAsmOperand : AsmOperandClass {
   let Name = "Mem";
 }
 
-def memsrc : Operand<i16> {
+def Memsrc : Operand<i16> {
   let PrintMethod = "printMemOperand";
   let MIOperandInfo = (ops IntReg, imm5);
   let ParserMatchClass = MemAsmOperand;
+  let OperandType = "OPERAND_MEMORY";
   //let EncoderMethod = "getMemOpValue";
   let DecoderMethod = "DecodeMemOperand";
 }
@@ -191,7 +192,7 @@ def J     : InstMupsJ<6, (ins jtarget:$imm11),
 
 // FIXME: these really don't need to be type II instructions (offsets on a JR call are probably not
 // very useful). Make them R-type, and free up a couple more slots for shifts by immediates.
-def JR  : InstMupsII1<8, (ins memsrc:$src),
+def JR  : InstMupsRImm8<8, (outs), (ins Memsrc:$src),
                       "jr  $src",
                       [/*TODO*/]>;
 
@@ -201,7 +202,7 @@ def JAL   : InstMupsJ<7, (ins jtarget:$imm11),
                       [/*TODO*/]>;
 
 //| JALR     | II   | 9      |    |  | `01001 RDD III III II` | `jalr  r1, 0x2    ` | Store `PC` into `RA`, add 8-bit immediate to `RS1` and jump to result |
-def JALR: InstMupsII1<9, (ins memsrc:$src),
+def JALR: InstMupsRImm8<9, (outs), (ins Memsrc:$src),
                       "jalr $src",
                       [/*TODO*/]>;
 } // end of nested jal block
@@ -218,15 +219,15 @@ def JALR: InstMupsII1<9, (ins memsrc:$src),
 let mayLoad = 1, DecoderMethod = "DecodeLoad" in {
 
 //| LB       | I    | 10     |    |  | `01010 RDD RS1 III II` | `lb    r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load single byte from resulting memory address into `RDD`, with sign extension of bit 7 |
-def LB  : InstMupsID1<10, (outs IntReg:$rdd), (ins memsrc:$src),
+def LB  : InstMupsMemLoad<10, (outs IntReg:$rdd), (ins Memsrc:$src),
                       "lb $rdd, $src",
                       [(set IntReg:$rdd, (sextloadi8 addr:$src))]>;
 //| LBU      | I    | 11     |    |  | `01011 RDD RS1 III II` | `lbu   r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load single byte from resulting memory address into `RDD`, with top 8 bits set to 0 |
-def LBU : InstMupsID1<11, (outs IntReg:$rdd), (ins memsrc:$src),
+def LBU : InstMupsMemLoad<11, (outs IntReg:$rdd), (ins Memsrc:$src),
                       "lbu $rdd, $src",
                       [(set IntReg:$rdd, (zextloadi8 addr:$src))]>;
 //| LW       | I    | 12     |    |  | `01100 RDD RS1 III II` | `lw    r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load two-byte word from resulting memory address into `RDD` |
-def LW  : InstMupsID1<12, (outs IntReg:$rdd), (ins memsrc:$src),
+def LW  : InstMupsMemLoad<12, (outs IntReg:$rdd), (ins Memsrc:$src),
                       "lw $rdd, $src",
                       [(set IntReg:$rdd, (load addr:$src))]>;
 }
@@ -235,11 +236,11 @@ def LW  : InstMupsID1<12, (outs IntReg:$rdd), (ins memsrc:$src),
 def : Pat<(extloadi8  addr:$src), (i16 (LBU addr:$src))>;
 
 //| LI       | II   | 13     |    |  | `01101 RDD III III II` | `li    r1, 0x7e   ` | Load 8-bit immediate value into `RDD`, with sign-extension of bit 7 |
-def LI  : InstMupsIID<13, (outs IntReg:$rdd), (ins imm8:$imm8),
+def LI  : InstMupsRImm8<13, (outs IntReg:$rdd), (ins imm8:$imm8),
                       "li $rdd, $imm8",
                       [(set IntReg:$rdd, imm8:$imm8)]>;
 //| LIU      | II   | 14     |    |  | `01110 RDD III III II` | `liu   r1, 0xff   ` | Load 8-bit immediate value into `RDD`, with top 8 bits set to 0 |
-def LIU : InstMupsIID<14, (outs IntReg:$rdd), (ins uimm8:$imm8),
+def LIU : InstMupsRImm8<14, (outs IntReg:$rdd), (ins uimm8:$imm8),
                       "liu $rdd, $imm8",
                       [(set IntReg:$rdd, uimm8:$imm8)]>;
 
@@ -248,18 +249,18 @@ def LIU : InstMupsIID<14, (outs IntReg:$rdd), (ins uimm8:$imm8),
 // only ever be safely used in conjunction with LIU (otherwise the bottom 8 bits
 // will be undefined).
 let Constraints = "$rs = $rdd" in {
-def LUI : InstMupsIID<15, (outs IntReg:$rdd), (ins IntRegs:$rs, uimm8:$imm8),
+def LUI : InstMupsRImm8<15, (outs IntReg:$rdd), (ins IntRegs:$rs, uimm8:$imm8),
                       "lui $rdd, $imm8",
                       []>;
 }
 
 let mayStore = 1, DecoderMethod = "DecodeStore" in {
 //| SB       | I    | 16     |    |  | `10000 RS1 RS2 III II` | `sb    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store low byte in `RS2` to resulting memory address |
-def SB   : InstMupsMemI2<16, (ins Memdst:$dst, IntReg:$rs2),
+def SB   : InstMupsMemStore<16, (ins Memdst:$dst, IntReg:$rs2),
                       "sb $dst, $rs2",
                       [(truncstorei8 IntReg:$rs2, addr:$dst)]>;
 //| SW       | I    | 17     |    |  | `10001 RS1 RS2 III II` | `sw    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store two-byte word `RS2` to resulting memory address |
-def SW   : InstMupsMemI2<17, (ins Memdst:$dst, IntReg:$rs2),
+def SW   : InstMupsMemStore<17, (ins Memdst:$dst, IntReg:$rs2),
                       "sw $dst, $rs2",
                       [(store_a (i16 IntReg:$rs2), addr:$dst)]>;
 }
@@ -269,14 +270,14 @@ def SW   : InstMupsMemI2<17, (ins Memdst:$dst, IntReg:$rs2),
 
 //| BZ       | II   | 20     |    |  | `10100 RS1 III III II` | `bz    r1, -26    ` | Branch to `PC` plus 8-bit immediate if `RS1` is zero |
 let isBranch = 1, isTerminator = 1 in {
-def BZ  : InstMupsII1<22, (ins IntReg:$rs1, brtarget:$offset),
-                      "bz $rs1, $offset",
-                      [(brcond (i16 (seteq IntReg:$rs1, 0)), bb:$offset)]>;
+def BZ  : InstMupsBranch<22, (outs), (ins IntReg:$reg, brtarget:$offset),
+                      "bz $reg, $offset",
+                      [(brcond (i16 (seteq IntReg:$reg, 0)), bb:$offset)]>;
 
 //| BNZ      | II   | 21     |    |  | `10101 RS1 III III II` | `bnz   r1, -26    ` | Branch to `PC` plus 8-bit immediate if `RS1` is not zero |
-def BNZ : InstMupsII1<23, (ins IntReg:$rs1, brtarget:$offset),
-                      "bnz $rs1, $offset",
-                      [(brcond (i16 (setne IntReg:$rs1, 0)), bb:$offset)]>;
+def BNZ : InstMupsBranch<23, (outs), (ins IntReg:$reg, brtarget:$offset),
+                      "bnz $reg, $offset",
+                      [(brcond (i16 (setne IntReg:$reg, 0)), bb:$offset)]>;
 
 }
 //| _unused_ |      | 22     |    |  | `10110               ` |                     | |

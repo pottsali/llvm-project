@@ -54,67 +54,61 @@ class InstMupsJR0<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
 // I-type instructions, with one dest register, one source, and a 5-bit 
 // immediate
 ////////////////////////////////////////////////////////////////////////////////
-class InstMupsI<bits<5> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
-  : InstMups<opcode, outs, ins, asmstr, pattern>
-{
-    bits<5> imm5;
-    let Inst{4-0} = imm5;
-}
-
 class InstMupsID1<bits<5> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
-  : InstMupsI<opcode, outs, ins, asmstr, pattern>
+  : InstMups<opcode, outs, ins, asmstr, pattern>
 {
     bits<3> rdd;
     bits<3> rs1;
+    bits<5> imm5;
 
     let Inst{10-8} = rdd;
     let Inst{7-5} = rs1;
+    let Inst{4-0} = imm5;
 }
 
-class InstMupsI2<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
-  : InstMupsI<opcode, (outs), ins, asmstr, pattern>
+class InstMupsMemLoad<bits<5> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
+  : InstMups<opcode, outs, ins, asmstr, pattern>
 {
-    bits<3> rs1;
+    bits<3> rd;
     bits<3> rs2;
-    let Inst{10-8} = rs1;
+    bits<5> imm5;
+
+    let Inst{10-8} = rd;
     let Inst{7-5} = rs2;
+    let Inst{4-0} = imm5;
 }
 
-class InstMupsMemI2<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
+class InstMupsMemStore<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
   : InstMups<opcode, (outs), ins, asmstr, pattern>
 {
     bits<3> rs1;
-    bits<5> imm5;
     bits<3> rs2;
+    bits<5> imm5;
     let Inst{10-8} = rs1;
-    let Inst{4-0} = imm5;
     let Inst{7-5} = rs2;
+    let Inst{4-0} = imm5;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // II-type instructions, with one dest register and an 8-bit immediate
 ////////////////////////////////////////////////////////////////////////////////
-class InstMupsII<bits<5> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
+class InstMupsRImm8<bits<5> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
   : InstMups<opcode, outs, ins, asmstr, pattern>
 {
+    bits<3> rs1;
     bits<8> imm8;
+    let Inst{10-8} = rs1;
     let Inst{7-0} = imm8;
 }
 
-class InstMupsIID<bits<5> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
-  : InstMupsII<opcode, outs, ins, asmstr, pattern>
+class InstMupsBranch<bits<5> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
+  : InstMups<opcode, outs, ins, asmstr, pattern>
 {
-    bits<3> rdd;
-    let Inst{10-8} = rdd;
+    bits<3> reg;
+    bits<8> offset;
+    let Inst{10-8} = reg;
+    let Inst{7-0} = offset;
 }
-
-class InstMupsII1<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
-  : InstMupsII<opcode, (outs), ins, asmstr, pattern>
-{
-    bits<3> rs1;
-    let Inst{10-8} = rs1;
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // R-type instructions, with one dest register and two source registers. These
 // also have a 2-bit sub-op suffix
