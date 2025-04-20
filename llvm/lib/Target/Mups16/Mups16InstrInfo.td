@@ -9,12 +9,14 @@ def Imm5AsmOperand : AsmOperandClass { let Name = "Imm5"; }
 def imm5 : Operand<i16>, PatLeaf<(imm), [{ return isInt<5>(N->getSExtValue()); }]>
 {
     let ParserMatchClass = Imm5AsmOperand;
+    let DecoderMethod = "decodeSImm<5>";
 }
 
 def Imm8AsmOperand : AsmOperandClass { let Name = "Imm8"; }
 def imm8 : Operand<i16>, PatLeaf<(imm), [{ return isInt<8>(N->getSExtValue()); }]>
 {
     let ParserMatchClass = Imm8AsmOperand;
+    let DecoderMethod = "decodeSImm<8>";
 }
 
 // Unsigned immediate values
@@ -30,12 +32,6 @@ def uimm8 : Operand<i16>, PatLeaf<(imm), [{ return isUInt<8>(N->getZExtValue());
 {
     //let PrintMethod = "printUImm<8>";
     let ParserMatchClass = UImm8AsmOperand;
-}
-
-def uimm11 : Operand<i16>
-{
-  // TODO
-  //let PrintMethod = "printUImm<11>";
 }
 
 def Imm16AsmOperand : AsmOperandClass { let Name = "Imm16"; }
@@ -54,7 +50,7 @@ def Memsrc : Operand<i16> {
   let MIOperandInfo = (ops IntReg, imm5);
   let ParserMatchClass = MemAsmOperand;
   let OperandType = "OPERAND_MEMORY";
-  //let EncoderMethod = "getMemOpValue";
+  let EncoderMethod = "getMemOpValue";
   let DecoderMethod = "DecodeMemOperand";
 }
 
@@ -63,7 +59,7 @@ def Memdst : Operand<i16> {
   let MIOperandInfo = (ops IntReg, imm5);
   let ParserMatchClass = MemAsmOperand;
   let OperandType = "OPERAND_MEMORY";
-//  let EncoderMethod = "getMemOpValue";
+  let EncoderMethod = "getMemOpValue";
   let DecoderMethod = "DecodeMemOperand";
 }
 
@@ -159,7 +155,7 @@ def Mups16Wrapper: SDNode<"Mups16ISD::Wrapper", SDTIntUnaryOp>;
 //|----------|------|--------|----|--|------------------------|---------------------| -----------
 //| ADDI     | I    | 0      |    |  | `00000 RDD RS1 III II` | `addi  sp, sp, -4 ` | Add 5-bit immediate to `RS1`, store in `RDD` |
 def ADDI  : InstMupsID1<0, (outs IntReg:$rdd), (ins IntReg:$rs1, imm5:$imm5),
-                      "addi $rdd, $rs1, $imm5",
+                      "addi  $rdd, $rs1, $imm5",
                       [(set i16:$rdd, (add i16:$rs1, i16:$imm5))]>;
 //| ADDIU    | I    | 1      |    |  | `00001 RDD RS1 III II` | `addiu sp, sp, 18 ` | Add 5-bit unsigned immediate to `RS1`, store in `RDD` |
 def ADDIU : InstMupsID1<1, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
@@ -167,19 +163,19 @@ def ADDIU : InstMupsID1<1, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
                       [/*TODO(set i16:$rdd, (add i16:$rs1, i8:$imm5))*/]>;
 //| ANDI     | I    | 2      |    |  | `00010 RDD RS1 III II` | `andi  r1, r2, 0x1` | Bitwise AND of 5-bit immediate with `RS1`, store in `RDD` |
 def ANDI  : InstMupsID1<2, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
-                      "andi $rdd, $rs1, $imm5",
+                      "andi  $rdd, $rs1, $imm5",
                       [/*TODO(set i16:$rdd, (and i16:$rs1, i8:$imm5))*/]>;
 //| ORI      | I    | 3      |    |  | `00011 RDD RS1 III II` | `ori   r1, r2, 0x1` | Bitwise OR of 5-bit immediate with `RS1`, store in `RDD` |
 def ORI   : InstMupsID1<3, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
-                      "ori $rdd, $rs1, $imm5",
+                      "ori   $rdd, $rs1, $imm5",
                       [/*TODO(set i16:$rdd, (or i16:$rs1, i8:$imm5))*/]>;
 //| XORI     | I    | 4      |    |  | `00100 RDD RS1 III II` | `xori  r1, r2, 0x1` | Bitwise XOR of 5-bit immediate with `RS1`, store in `RDD` |
 def XORI  : InstMupsID1<4, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
-                      "xori $rdd, $rs1, $imm5",
+                      "xori  $rdd, $rs1, $imm5",
                       [/*TODO(set i16:$rdd, (xor i16:$rs1, i8:$imm5))*/]>;
 //| NORI     | I    | 5      |    |  | `00101 RDD RS1 III II` | `nori  r1, r2, 0x1` | Bitwise NOR of 5-bit immediate with `RS1`, store in `RDD` |
 def NORI  : InstMupsID1<5, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
-                      "nori $rdd, $rs1, $imm5",
+                      "nori  $rdd, $rs1, $imm5",
                       [/*TODO*/]>;
 //| J        | J    | 6      |    |  | `00110 III III III II` | `j     0x07fe     ` | Unconditional jump to 11-bit immediate offset from PC |
 //| JAL      | J    | 7      |    |  | `00111 III III III II` | `jal   0x07fe     ` | Store `PC` into `RA` and jump to 11-bit immediate offset from PC |
@@ -187,23 +183,23 @@ def NORI  : InstMupsID1<5, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
 
 let isBranch = 1, isTerminator = 1 in {
 def J     : InstMupsJ<6, (ins jtarget:$imm11),
-                      "j $imm11",
+                      "j     $imm11",
                       [(br bb:$imm11)]>;
 
 // FIXME: these really don't need to be type II instructions (offsets on a JR call are probably not
 // very useful). Make them R-type, and free up a couple more slots for shifts by immediates.
-def JR  : InstMupsRImm8<8, (outs), (ins Memsrc:$src),
-                      "jr  $src",
+def JR  : InstMupsJR<8, (outs), (ins Memsrc:$addr),
+                      "jr    $addr",
                       [/*TODO*/]>;
 
 let Defs = [RA] in {
 def JAL   : InstMupsJ<7, (ins jtarget:$imm11),
-                      "jal $imm11",
+                      "jal   $imm11",
                       [/*TODO*/]>;
 
 //| JALR     | II   | 9      |    |  | `01001 RDD III III II` | `jalr  r1, 0x2    ` | Store `PC` into `RA`, add 8-bit immediate to `RS1` and jump to result |
-def JALR: InstMupsRImm8<9, (outs), (ins Memsrc:$src),
-                      "jalr $src",
+def JALR: InstMupsJR<9, (outs), (ins Memsrc:$addr),
+                      "jalr  $addr",
                       [/*TODO*/]>;
 } // end of nested jal block
 
@@ -220,15 +216,15 @@ let mayLoad = 1, DecoderMethod = "DecodeLoad" in {
 
 //| LB       | I    | 10     |    |  | `01010 RDD RS1 III II` | `lb    r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load single byte from resulting memory address into `RDD`, with sign extension of bit 7 |
 def LB  : InstMupsMemLoad<10, (outs IntReg:$rdd), (ins Memsrc:$src),
-                      "lb $rdd, $src",
+                      "lb    $rdd, $src",
                       [(set IntReg:$rdd, (sextloadi8 addr:$src))]>;
 //| LBU      | I    | 11     |    |  | `01011 RDD RS1 III II` | `lbu   r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load single byte from resulting memory address into `RDD`, with top 8 bits set to 0 |
 def LBU : InstMupsMemLoad<11, (outs IntReg:$rdd), (ins Memsrc:$src),
-                      "lbu $rdd, $src",
+                      "lbu   $rdd, $src",
                       [(set IntReg:$rdd, (zextloadi8 addr:$src))]>;
 //| LW       | I    | 12     |    |  | `01100 RDD RS1 III II` | `lw    r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load two-byte word from resulting memory address into `RDD` |
 def LW  : InstMupsMemLoad<12, (outs IntReg:$rdd), (ins Memsrc:$src),
-                      "lw $rdd, $src",
+                      "lw    $rdd, $src",
                       [(set IntReg:$rdd, (load addr:$src))]>;
 }
 
@@ -236,12 +232,12 @@ def LW  : InstMupsMemLoad<12, (outs IntReg:$rdd), (ins Memsrc:$src),
 def : Pat<(extloadi8  addr:$src), (i16 (LBU addr:$src))>;
 
 //| LI       | II   | 13     |    |  | `01101 RDD III III II` | `li    r1, 0x7e   ` | Load 8-bit immediate value into `RDD`, with sign-extension of bit 7 |
-def LI  : InstMupsRImm8<13, (outs IntReg:$rdd), (ins imm8:$imm8),
-                      "li $rdd, $imm8",
+def LI  : InstMupsRDImm8<13, (outs IntReg:$rdd), (ins imm8:$imm8),
+                      "li    $rdd, $imm8",
                       [(set IntReg:$rdd, imm8:$imm8)]>;
 //| LIU      | II   | 14     |    |  | `01110 RDD III III II` | `liu   r1, 0xff   ` | Load 8-bit immediate value into `RDD`, with top 8 bits set to 0 |
-def LIU : InstMupsRImm8<14, (outs IntReg:$rdd), (ins uimm8:$imm8),
-                      "liu $rdd, $imm8",
+def LIU : InstMupsRDImm8<14, (outs IntReg:$rdd), (ins uimm8:$imm8),
+                      "liu   $rdd, $imm8",
                       [(set IntReg:$rdd, uimm8:$imm8)]>;
 
 //| LUI      | II   | 15     |    |  | `01111 RDD III III II` | `lui   r1, 0x01   ` | Load 8-bit immediate value into upper 8 bits of `RDD`. Lower 8 bits are unchanged |
@@ -249,19 +245,19 @@ def LIU : InstMupsRImm8<14, (outs IntReg:$rdd), (ins uimm8:$imm8),
 // only ever be safely used in conjunction with LIU (otherwise the bottom 8 bits
 // will be undefined).
 let Constraints = "$rs = $rdd" in {
-def LUI : InstMupsRImm8<15, (outs IntReg:$rdd), (ins IntRegs:$rs, uimm8:$imm8),
-                      "lui $rdd, $imm8",
+def LUI : InstMupsRDImm8<15, (outs IntReg:$rdd), (ins IntRegs:$rs, uimm8:$imm8),
+                      "lui   $rdd, $imm8",
                       []>;
 }
 
-let mayStore = 1, DecoderMethod = "DecodeStore" in {
+let mayStore = 1 in { //, DecoderMethod = "DecodeStore" in {
 //| SB       | I    | 16     |    |  | `10000 RS1 RS2 III II` | `sb    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store low byte in `RS2` to resulting memory address |
 def SB   : InstMupsMemStore<16, (ins Memdst:$dst, IntReg:$rs2),
-                      "sb $dst, $rs2",
+                      "sb    $dst, $rs2",
                       [(truncstorei8 IntReg:$rs2, addr:$dst)]>;
 //| SW       | I    | 17     |    |  | `10001 RS1 RS2 III II` | `sw    [6]sp, r1  ` | Add 5-bit immediate to `RS1`, and store two-byte word `RS2` to resulting memory address |
 def SW   : InstMupsMemStore<17, (ins Memdst:$dst, IntReg:$rs2),
-                      "sw $dst, $rs2",
+                      "sw    $dst, $rs2",
                       [(store_a (i16 IntReg:$rs2), addr:$dst)]>;
 }
 
@@ -270,14 +266,14 @@ def SW   : InstMupsMemStore<17, (ins Memdst:$dst, IntReg:$rs2),
 
 //| BZ       | II   | 20     |    |  | `10100 RS1 III III II` | `bz    r1, -26    ` | Branch to `PC` plus 8-bit immediate if `RS1` is zero |
 let isBranch = 1, isTerminator = 1 in {
-def BZ  : InstMupsBranch<22, (outs), (ins IntReg:$reg, brtarget:$offset),
-                      "bz $reg, $offset",
-                      [(brcond (i16 (seteq IntReg:$reg, 0)), bb:$offset)]>;
+def BZ  : InstMupsRImm8<22, (outs), (ins IntReg:$rs1, brtarget:$imm8),
+                      "bz    $rs1, $imm8",
+                      [(brcond (i16 (seteq IntReg:$rs1, 0)), bb:$imm8)]>;
 
 //| BNZ      | II   | 21     |    |  | `10101 RS1 III III II` | `bnz   r1, -26    ` | Branch to `PC` plus 8-bit immediate if `RS1` is not zero |
-def BNZ : InstMupsBranch<23, (outs), (ins IntReg:$reg, brtarget:$offset),
-                      "bnz $reg, $offset",
-                      [(brcond (i16 (setne IntReg:$reg, 0)), bb:$offset)]>;
+def BNZ : InstMupsRImm8<23, (outs), (ins IntReg:$rs1, brtarget:$imm8),
+                      "bnz   $rs1, $imm8",
+                      [(brcond (i16 (setne IntReg:$rs1, 0)), bb:$imm8)]>;
 
 }
 //| _unused_ |      | 22     |    |  | `10110               ` |                     | |
@@ -285,62 +281,62 @@ def BNZ : InstMupsBranch<23, (outs), (ins IntReg:$reg, brtarget:$offset),
 
 //| ADD      | R    | 24     | 0  |  | `11000 RDD RS1 RS2 00` | `add   r1, r2, r3 ` | Add `RS1` to `RS2`, store result in `RDD` |
 def ADD : InstMupsRD2<24,      0, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "add $rdd, $rs1, $rs2",
+                      "add   $rdd, $rs1, $rs2",
                       [(set i16:$rdd, (add i16:$rs1, i16:$rs2))]>;
 
 //| _unused_ |      | 24     | 1  |  | `10111               ` |                     | |
 //| SUB      | R    | 24     | 2  |  | `11000 RDD RS1 RS2 10` | `sub   r1, r2, r3 ` | Subtract `RS2` from `RS1`, store result in `RDD` |
 def SUB : InstMupsRD2<24,      2, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "sub $rdd, $rs1, $rs2",
+                      "sub   $rdd, $rs1, $rs2",
                       [(set i16:$rdd, (sub i16:$rs1, i16:$rs2))]>;
 //| SUBU     | R    | 24     | 3  |  | `11000 RDD RS1 RS2 11` | `subu  r1, r2, r3 ` | Subtract `RS2` from `RS1`, store result in `RDD`, unsgigned |
 def SUBU: InstMupsRD2<24,      3, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "subu $rdd, $rs1, $rs2",
+                      "subu  $rdd, $rs1, $rs2",
                       [/*TODO*/]>;
 //| AND      | R    | 25     | 0  |  | `11001 RDD RS1 RS2 00` | `and   r1, r2, r3 ` | Bitwise AND of `RS1` with `RS2`, store result in `RDD` |
 def AND : InstMupsRD2<25,      0, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "and $rdd, $rs1, $rs2",
+                      "and   $rdd, $rs1, $rs2",
                       [/*TODO*/]>;
 //| OR       | R    | 25     | 1  |  | `11001 RDD RS1 RS2 01` | `or    r1, r2, r3 ` | Bitwise OR of `RS1` with `RS2`, store result in `RDD` |
 def OR  : InstMupsRD2<25,      1, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "or $rdd, $rs1, $rs2",
+                      "or    $rdd, $rs1, $rs2",
                       [/*TODO*/]>;
 //| XOR      | R    | 25     | 2  |  | `11001 RDD RS1 RS2 10` | `xor   r1, r2, r3 ` | Bitwise XOR of `RS1` with `RS2`, store result in `RDD` |
 def XOR : InstMupsRD2<25,      2, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "xor $rdd, $rs1, $rs2",
+                      "xor   $rdd, $rs1, $rs2",
                       [/*TODO*/]>;
 //| NOR      | R    | 25     | 3  |  | `11001 RDD RS1 RS2 11` | `nor   r1, r2, r3 ` | Bitwise NOR of `RS1` with `RS2`, store result in `RDD` |
 def NOR : InstMupsRD2<25,      3, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "nor $rdd, $rs1, $rs2",
+                      "nor   $rdd, $rs1, $rs2",
                       [/*TODO*/]>;
 //| SLL      | R    | 26     | 0  |  | `11010 RDD RS1 RS2 00` | `sll   r1, r2, r3 ` | Shift contents of `RS1` left by amount given in bottom 5 bits of `RS2`, shifting in zero, store result in `RDD` |
 def SLL : InstMupsRD2<26,      0, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "sll $rdd, $rs1, $rs2",
+                      "sll   $rdd, $rs1, $rs2",
                       [/*TODO*/]>;
 //| SRL      | R    | 26     | 1  |  | `11010 RDD RS1 RS2 01` | `srl   r1, r2, r3 ` | Shift contents of `RS1` right by amount given in bottom 5 bits of `RS2`, shifting in zero, store result in `RDD` |
 def SRL : InstMupsRD2<26,      1, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "srl $rdd, $rs1, $rs2",
+                      "srl   $rdd, $rs1, $rs2",
                       [/*TODO*/]>;
 //| SRA      | R    | 26     | 2  |  | `11010 RDD RS1 RS2 10` | `sra   r1, r2, r3 ` | Shift contents of `RS1` left by amount given in bottom 5 bits of `RS2`, shifting in bit 15 of `RS1`, store result in `RDD` |
 def SRA : InstMupsRD2<26,      2, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "sra $rdd, $rs1, $rs2",
+                      "sra   $rdd, $rs1, $rs2",
                       [/*TODO*/]>;
 //| _unused_ | R    | 26     | 3  |  | `11010               ` |                     | |
 //| SEQ      | R    | 27     | 0  |  | `11011 RDD RS1 RS2 00` | `seq   r1, r2, r3 ` | Set `RDD` to 1 if `RS1 == RS2`, 0 otherwise |
 def SEQ : InstMupsRD2<27,      0, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "seq $rdd, $rs1, $rs2",
+                      "seq   $rdd, $rs1, $rs2",
                       [(set IntRegs:$rdd, (seteq IntRegs:$rs1, IntRegs:$rs2))]>;
 //| SNE      | R    | 27     | 1  |  | `11011 RDD RS1 RS2 01` | `sne   r1, r2, r3 ` | Set `RDD` to 1 if `RS1 != RS2`, 0 otherwise |
 def SNE : InstMupsRD2<27,      1, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "sne $rdd, $rs1, $rs2",
+                      "sne   $rdd, $rs1, $rs2",
                       [(set IntRegs:$rdd, (setne IntRegs:$rs1, IntRegs:$rs2))]>;
 //| SLT      | R    | 27     | 2  |  | `11011 RDD RS1 RS2 10` | `slt   r1, r2, r3 ` | Set `RDD` to 1 if `RS1 < RS2`, 0 otherwise, signed comparison |
 def SLT : InstMupsRD2<27,      2, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "slt $rdd, $rs1, $rs2",
+                      "slt   $rdd, $rs1, $rs2",
                       [(set IntRegs:$rdd, (setlt IntRegs:$rs1, IntRegs:$rs2))]>;
 //| SLTU     | R    | 27     | 3  |  | `11011 RDD RS1 RS2 11` | `sltu  r1, r2, r3 ` | Set `RDD` to 1 if `RS1 < RS2`, 0 otherwise, unsigned comparison |
 def SLTU: InstMupsRD2<27,      3, (outs IntRegs:$rdd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                      "sltu $rdd, $rs1, $rs2",
+                      "sltu  $rdd, $rs1, $rs2",
                       [(set IntRegs:$rdd, (setult IntRegs:$rs1, IntRegs:$rs2))]>;
 //| _unused_ |      | 28     |    |  | `11100               ` |                     | |
 //| _unused_ |      | 29     |    |  | `11101               ` |                     | |
@@ -362,19 +358,19 @@ def SYSCALL:InstMupsR1<30,     1, (ins IntRegs:$rs1),
 //                      []>;
 //| PTRI     | R    | 31     | 0  |  | `11111 RDD 000 000 00` | `ptri r1          ` | Read current page table index into `RDD` |
 def PTRI : InstMupsRD<31,      0, (outs IntRegs:$rdd), (ins),
-                      "ptri $rdd",
+                      "ptri  $rdd",
                       []>;
 //| PTSI     | R    | 31     | 1  |  | `11111 RS1 000 000 01` | `ptsi r1          ` | Set page table index to contents of `RS1` |
 def PTSI : InstMupsR1<31,      1, (ins IntRegs:$rs1),
-                      "ptsi $rs1",
+                      "ptsi  $rs1",
                       []>;
 //| PTRE     | R    | 31     | 2  |  | `11111 RDD RS1 000 10` | `ptre r1, r2      ` | Read current page table entry at address given in `RS1` into `RDD` |
 def PTRE: InstMupsRD1<31,      2, (outs IntReg:$rdd), (ins IntRegs:$rs1),
-                      "ptre $rdd, $rs1",
+                      "ptre  $rdd, $rs1",
                       []>;
 //| PTSE     | R    | 31     | 3  |  | `11111 RS1 RS2 000 11` | `ptse r1, r2      ` | Set page table entry at address given in `RS1` to contents of `RS2` |
 def PTSE : InstMupsR2<31,      3, (ins IntReg:$rs1, IntRegs:$rs2),
-                      "ptse $rs1, $rs2",
+                      "ptse  $rs1, $rs2",
                       []>;
 
 

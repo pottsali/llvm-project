@@ -73,15 +73,14 @@ extern "C" void LLVMInitializeMups16Disassembler()
 // decodeInstruction function will refer to them.
 //////////////////////////////////////////////////////////////////////////////////
 namespace {
-DecodeStatus DecodeMemOperand(MCInst &Inst,
-                                     unsigned RegNo,
-                                     uint64_t Address,
-                                     const void *Decoder);
-
-DecodeStatus DecodeLoad(MCInst &Inst, unsigned Insn,
+template <int Bits>
+DecodeStatus decodeSImm(MCInst &Inst, unsigned Imm,
     uint64_t Address, const void *Decoder);
 
-DecodeStatus DecodeStore(MCInst &Inst, unsigned Insn,
+DecodeStatus DecodeMemOperand(MCInst &Inst, unsigned Insn,
+    uint64_t Address, const void *Decoder);
+
+DecodeStatus DecodeLoad(MCInst &Inst, unsigned Insn,
     uint64_t Address, const void *Decoder);
 
 DecodeStatus DecodeIntRegsRegisterClass(MCInst &Inst, unsigned RegNo,
@@ -92,6 +91,10 @@ DecodeStatus DecodeSysRegsRegisterClass(MCInst &Inst, unsigned RegNo,
 
 DecodeStatus DecodeBranchTarget(MCInst &Inst, unsigned Offset,
     uint64_t Address, const void *Decoder);
+
+DecodeStatus DecodeJumpTarget(MCInst &Inst, unsigned Offset,
+    uint64_t Address, const void *Decoder);
+
 }
 
 #include "Mups16GenDisassemblerTables.inc"
@@ -158,6 +161,19 @@ static unsigned getUImmField(unsigned Instruction)
 
 namespace {
 
+template <int Bits>
+DecodeStatus decodeSImm(MCInst &Inst, unsigned Imm,
+    uint64_t Address, const void *Decoder)
+{
+    // Check for overflow
+    if (Imm & ~((1LL << Bits) - 1))
+        return MCDisassembler::Fail;
+
+    int32_t SImm = SignExtend32<Bits>(Imm);
+    Inst.addOperand(MCOperand::createImm(SImm));
+    return MCDisassembler::Success;
+}
+
 // Decode the whole of a load instruction, since I can't work out how to get the memory operand to decode automatically
 DecodeStatus DecodeLoad(MCInst &Inst, unsigned Insn,
     uint64_t Address, const void *Decoder)
@@ -167,22 +183,17 @@ DecodeStatus DecodeLoad(MCInst &Inst, unsigned Insn,
     Inst.addOperand(MCOperand::createImm(getImmField<5>(Insn)));
     return MCDisassembler::Success;
 }
-DecodeStatus DecodeStore(MCInst &Inst, unsigned Insn,
-    uint64_t Address, const void *Decoder)
-{
-    Inst.addOperand(MCOperand::createReg(RegisterTable[getRegField<0>(Insn)]));
-    Inst.addOperand(MCOperand::createImm(getImmField<5>(Insn)));
-    Inst.addOperand(MCOperand::createReg(RegisterTable[getRegField<1>(Insn)]));
-    return MCDisassembler::Success;
-}
 
 DecodeStatus DecodeMemOperand(MCInst &Inst, unsigned Insn,
     uint64_t Address, const void *Decoder)
 {
-    // Memory operands consist of
-    //  - a base register (in bits 8-10)
-    //  - an offset (in bits 0-7)
-    Inst.addOperand(MCOperand::createReg(RegisterTable[getRegField<0>(Insn)]));
+    // Memory operands are treated as a single operand, but consist of
+    //  - a base register (in bits 5-7)
+    //  - an offset (in bits 0-4)
+    // Note that these are NOT necessarily the same indices that the bits have
+    // in the encoded instruction; the instruction format will have specified
+    // how the 8 bits are spread across the final 16-bit instruction.
+    Inst.addOperand(MCOperand::createReg(RegisterTable[(Insn >> 5) & 0x7]));
     Inst.addOperand(MCOperand::createImm(getImmField<5>(Insn)));
     return MCDisassembler::Success;
 }
@@ -207,6 +218,13 @@ DecodeStatus DecodeBranchTarget(MCInst &Inst, unsigned Offset,
     uint64_t Address, const void *Decoder)
 {
     Inst.addOperand(MCOperand::createImm((SignExtend32<8>(Offset) * 2) + 2));
+    return MCDisassembler::Success;
+}
+
+DecodeStatus DecodeJumpTarget(MCInst &Inst, unsigned Offset,
+    uint64_t Address, const void *Decoder)
+{
+    Inst.addOperand(MCOperand::createImm((SignExtend32<11>(Offset) * 2) + 2));
     return MCDisassembler::Success;
 }
 

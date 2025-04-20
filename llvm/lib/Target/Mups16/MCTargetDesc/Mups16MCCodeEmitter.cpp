@@ -64,6 +64,10 @@ class Mups16MCCodeEmitter : public MCCodeEmitter {
                                     SmallVectorImpl<MCFixup> &Fixups, const MCSubtargetInfo &STI) const;
 
 
+    unsigned getMemOpValue(const MCInst &MI, unsigned Op,
+                           SmallVectorImpl<MCFixup> &Fixups,
+                           const MCSubtargetInfo &STI) const;
+
 public:
     Mups16MCCodeEmitter(MCContext &ctx, MCInstrInfo const &MCII)
     : Ctx(ctx), MCII(MCII) {}
@@ -170,6 +174,18 @@ unsigned Mups16MCCodeEmitter::getJumpTargetOpValue(const MCInst &MI, unsigned Op
     Fixups.push_back(MCFixup::create(0, MO.getExpr(),
         (MCFixupKind)Mups16::fixup_mups16_j11));
     return 0;
+}
+
+unsigned Mups16MCCodeEmitter::getMemOpValue(const MCInst &MI, unsigned Op,
+    SmallVectorImpl<MCFixup> &Fixups, const MCSubtargetInfo &STI) const
+{
+    const MCOperand &MO1 = MI.getOperand(Op);
+    assert(MO1.isReg() && "Register operand expected");
+    unsigned Reg = Ctx.getRegisterInfo()->getEncodingValue(MO1.getReg());
+
+    const MCOperand &MO2 = MI.getOperand(Op + 1);
+    assert(MO2.isImm() && "Immediate operand expected");
+    return ((Reg & 0x7) << 5) | ((unsigned)MO2.getImm() & 0x1f);
 }
 
 // MSP430 //unsigned Mups16MCCodeEmitter::getMemOpValue(const MCInst &MI, unsigned Op,
