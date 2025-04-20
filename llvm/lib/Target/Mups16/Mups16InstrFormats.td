@@ -32,23 +32,22 @@ class MupsPseudo<dag outs, dag ins, list<dag> pattern>:
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// J-type instructions, with an 11-bit immediate
+// J- and JR-type instructions, with either an 11-bit immediate or a register
+// and an 8-bit immediate encoded as a single 11-bit operand
 ////////////////////////////////////////////////////////////////////////////////
-class InstMupsJ<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
-  : InstMups<opcode, (outs), ins, asmstr, pattern>
-{
-    bits<11> imm11;
-    let Inst{10-0} = imm11;
-}
+//class InstMupsJ<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
+//  : InstMups<opcode, (outs), ins, asmstr, pattern>
+//{
+//    bits<11> imm11;
+//    let Inst{10-0} = imm11;
+//}
 
-class InstMupsJR0<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
-  : InstMups<opcode, (outs), ins, asmstr, pattern>
+class InstMupsJump<bits<5> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
+  : InstMups<opcode, outs, ins, asmstr, pattern>
 {
-    bits<3> tgt;
-    let Inst{10-8} = tgt;
-    let Inst{7-0} = 0;
+    bits<11> addr;
+    let Inst{10-0} = addr;
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // I-type instructions, with one dest register, one source, and a 5-bit 
@@ -69,19 +68,17 @@ class InstMupsID1<bits<5> opcode, dag outs, dag ins, string asmstr, list<dag> pa
 class InstMupsMemLoad<bits<5> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
   : InstMups<opcode, outs, ins, asmstr, pattern>
 {
-    bits<3> rd;
-    bits<3> rs2;
-    bits<5> imm5;
+    bits<3> rdd;
+    bits<8> src;
 
-    let Inst{10-8} = rd;
-    let Inst{7-5} = rs2;
-    let Inst{4-0} = imm5;
+    let Inst{10-8} = rdd;
+    let Inst{7-0} = src;
 }
 
 class InstMupsMemStore<bits<5> opcode, dag ins, string asmstr, list<dag> pattern>
   : InstMups<opcode, (outs), ins, asmstr, pattern>
 {
-    bits<8> dst;
+    bits<8> dst;    // encoded Memsrc operand
     bits<3> rs2;
     let Inst{10-8} = dst{7-5};
     let Inst{7-5} = rs2;
@@ -107,13 +104,6 @@ class InstMupsRDImm8<bits<5> opcode, dag outs, dag ins, string asmstr, list<dag>
     bits<8> imm8;
     let Inst{10-8} = rdd;
     let Inst{7-0} = imm8;
-}
-
-class InstMupsJR<bits<5> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
-  : InstMups<opcode, outs, ins, asmstr, pattern>
-{
-    bits<11> addr;
-    let Inst{10-0} = addr;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

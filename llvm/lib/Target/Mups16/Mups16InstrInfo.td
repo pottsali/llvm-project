@@ -50,8 +50,8 @@ def Memsrc : Operand<i16> {
   let MIOperandInfo = (ops IntReg, imm5);
   let ParserMatchClass = MemAsmOperand;
   let OperandType = "OPERAND_MEMORY";
-  let EncoderMethod = "getMemOpValue";
-  let DecoderMethod = "DecodeMemOperand";
+  let EncoderMethod = "getMemOpValue<5>";
+  let DecoderMethod = "decodeMemOperand<5>";
 }
 
 def Memdst : Operand<i16> {
@@ -59,8 +59,17 @@ def Memdst : Operand<i16> {
   let MIOperandInfo = (ops IntReg, imm5);
   let ParserMatchClass = MemAsmOperand;
   let OperandType = "OPERAND_MEMORY";
-  let EncoderMethod = "getMemOpValue";
-  let DecoderMethod = "DecodeMemOperand";
+  let EncoderMethod = "getMemOpValue<5>";
+  let DecoderMethod = "decodeMemOperand<5>";
+}
+
+def MemJRTgt : Operand<i16> {
+  let PrintMethod = "printMemOperand";
+  let MIOperandInfo = (ops IntReg, imm8);
+  let ParserMatchClass = MemAsmOperand;
+  let OperandType = "OPERAND_MEMORY";
+  let EncoderMethod = "getMemOpValue<8>";
+  let DecoderMethod = "decodeMemOperand<8>";
 }
 
 // Branch operands
@@ -74,7 +83,7 @@ def Mups16BranchTargetAsmOperand : AsmOperandClass {
 def brtarget    : Operand<OtherVT> {
   let EncoderMethod = "getBranchTargetOpValue";
   let OperandType = "OPERAND_PCREL";
-  let DecoderMethod = "DecodeBranchTarget";
+  let DecoderMethod = "decodeBranchTarget";
   let ParserMatchClass = Mups16BranchTargetAsmOperand;
 }
 
@@ -91,7 +100,7 @@ def Mups16JumpTargetAsmOperand : AsmOperandClass {
 def jtarget    : Operand<OtherVT> {
   let EncoderMethod = "getJumpTargetOpValue";
   let OperandType = "OPERAND_PCREL";
-  let DecoderMethod = "DecodeJumpTarget";
+  let DecoderMethod = "decodeJumpTarget";
   let ParserMatchClass = Mups16JumpTargetAsmOperand;
 }
 
@@ -182,23 +191,23 @@ def NORI  : InstMupsID1<5, (outs IntReg:$rdd), (ins IntReg:$rs1, uimm5:$imm5),
 //| JR       | II   | 8      |    |  | `01000 RDD III III II` | `jr    ra, 0      ` | Add 8-bit immediate to `RDD` and jump to result |
 
 let isBranch = 1, isTerminator = 1 in {
-def J     : InstMupsJ<6, (ins jtarget:$imm11),
-                      "j     $imm11",
-                      [(br bb:$imm11)]>;
+def J     : InstMupsJump<6, (outs), (ins jtarget:$addr),
+                      "j     $addr",
+                      [(br bb:$addr)]>;
 
 // FIXME: these really don't need to be type II instructions (offsets on a JR call are probably not
 // very useful). Make them R-type, and free up a couple more slots for shifts by immediates.
-def JR  : InstMupsJR<8, (outs), (ins Memsrc:$addr),
+def JR  : InstMupsJump<8, (outs), (ins MemJRTgt:$addr),
                       "jr    $addr",
                       [/*TODO*/]>;
 
 let Defs = [RA] in {
-def JAL   : InstMupsJ<7, (ins jtarget:$imm11),
-                      "jal   $imm11",
+def JAL   : InstMupsJump<7, (outs), (ins jtarget:$addr),
+                      "jal   $addr",
                       [/*TODO*/]>;
 
 //| JALR     | II   | 9      |    |  | `01001 RDD III III II` | `jalr  r1, 0x2    ` | Store `PC` into `RA`, add 8-bit immediate to `RS1` and jump to result |
-def JALR: InstMupsJR<9, (outs), (ins Memsrc:$addr),
+def JALR: InstMupsJump<9, (outs), (ins MemJRTgt:$addr),
                       "jalr  $addr",
                       [/*TODO*/]>;
 } // end of nested jal block
@@ -212,7 +221,7 @@ def JALR: InstMupsJR<9, (outs), (ins Memsrc:$addr),
 ////////////////////////////////////////////////////////////////////////////////
 
 
-let mayLoad = 1, DecoderMethod = "DecodeLoad" in {
+let mayLoad = 1 in {
 
 //| LB       | I    | 10     |    |  | `01010 RDD RS1 III II` | `lb    r1, [6]sp  ` | Add 5-bit immediate to `RS1`, and load single byte from resulting memory address into `RDD`, with sign extension of bit 7 |
 def LB  : InstMupsMemLoad<10, (outs IntReg:$rdd), (ins Memsrc:$src),

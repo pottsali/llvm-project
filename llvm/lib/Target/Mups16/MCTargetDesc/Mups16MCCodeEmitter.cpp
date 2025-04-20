@@ -64,6 +64,7 @@ class Mups16MCCodeEmitter : public MCCodeEmitter {
                                     SmallVectorImpl<MCFixup> &Fixups, const MCSubtargetInfo &STI) const;
 
 
+    template <unsigned ImmBits>
     unsigned getMemOpValue(const MCInst &MI, unsigned Op,
                            SmallVectorImpl<MCFixup> &Fixups,
                            const MCSubtargetInfo &STI) const;
@@ -176,6 +177,7 @@ unsigned Mups16MCCodeEmitter::getJumpTargetOpValue(const MCInst &MI, unsigned Op
     return 0;
 }
 
+template <unsigned ImmBits>
 unsigned Mups16MCCodeEmitter::getMemOpValue(const MCInst &MI, unsigned Op,
     SmallVectorImpl<MCFixup> &Fixups, const MCSubtargetInfo &STI) const
 {
@@ -185,7 +187,8 @@ unsigned Mups16MCCodeEmitter::getMemOpValue(const MCInst &MI, unsigned Op,
 
     const MCOperand &MO2 = MI.getOperand(Op + 1);
     assert(MO2.isImm() && "Immediate operand expected");
-    return ((Reg & 0x7) << 5) | ((unsigned)MO2.getImm() & 0x1f);
+    unsigned ImmMask = ((1 << ImmBits) - 1);
+    return ((Reg & 0x7) << ImmBits) | ((unsigned)MO2.getImm() & ImmMask);
 }
 
 // MSP430 //unsigned Mups16MCCodeEmitter::getMemOpValue(const MCInst &MI, unsigned Op,

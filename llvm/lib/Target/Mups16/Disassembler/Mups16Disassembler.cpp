@@ -77,10 +77,11 @@ template <int Bits>
 DecodeStatus decodeSImm(MCInst &Inst, unsigned Imm,
     uint64_t Address, const void *Decoder);
 
-DecodeStatus DecodeMemOperand(MCInst &Inst, unsigned Insn,
+template <unsigned ImmBits>
+DecodeStatus decodeMemOperand(MCInst &Inst, unsigned Insn,
     uint64_t Address, const void *Decoder);
 
-DecodeStatus DecodeLoad(MCInst &Inst, unsigned Insn,
+DecodeStatus decodeLoad(MCInst &Inst, unsigned Insn,
     uint64_t Address, const void *Decoder);
 
 DecodeStatus DecodeIntRegsRegisterClass(MCInst &Inst, unsigned RegNo,
@@ -89,10 +90,10 @@ DecodeStatus DecodeIntRegsRegisterClass(MCInst &Inst, unsigned RegNo,
 DecodeStatus DecodeSysRegsRegisterClass(MCInst &Inst, unsigned RegNo,
     uint64_t Address, const void *Decoder);
 
-DecodeStatus DecodeBranchTarget(MCInst &Inst, unsigned Offset,
+DecodeStatus decodeBranchTarget(MCInst &Inst, unsigned Offset,
     uint64_t Address, const void *Decoder);
 
-DecodeStatus DecodeJumpTarget(MCInst &Inst, unsigned Offset,
+DecodeStatus decodeJumpTarget(MCInst &Inst, unsigned Offset,
     uint64_t Address, const void *Decoder);
 
 }
@@ -175,7 +176,7 @@ DecodeStatus decodeSImm(MCInst &Inst, unsigned Imm,
 }
 
 // Decode the whole of a load instruction, since I can't work out how to get the memory operand to decode automatically
-DecodeStatus DecodeLoad(MCInst &Inst, unsigned Insn,
+DecodeStatus decodeLoad(MCInst &Inst, unsigned Insn,
     uint64_t Address, const void *Decoder)
 {
     Inst.addOperand(MCOperand::createReg(RegisterTable[getRegField<0>(Insn)]));
@@ -184,7 +185,8 @@ DecodeStatus DecodeLoad(MCInst &Inst, unsigned Insn,
     return MCDisassembler::Success;
 }
 
-DecodeStatus DecodeMemOperand(MCInst &Inst, unsigned Insn,
+template <unsigned ImmBits>
+DecodeStatus decodeMemOperand(MCInst &Inst, unsigned Insn,
     uint64_t Address, const void *Decoder)
 {
     // Memory operands are treated as a single operand, but consist of
@@ -193,8 +195,8 @@ DecodeStatus DecodeMemOperand(MCInst &Inst, unsigned Insn,
     // Note that these are NOT necessarily the same indices that the bits have
     // in the encoded instruction; the instruction format will have specified
     // how the 8 bits are spread across the final 16-bit instruction.
-    Inst.addOperand(MCOperand::createReg(RegisterTable[(Insn >> 5) & 0x7]));
-    Inst.addOperand(MCOperand::createImm(getImmField<5>(Insn)));
+    Inst.addOperand(MCOperand::createReg(RegisterTable[(Insn >> ImmBits) & 0x7]));
+    Inst.addOperand(MCOperand::createImm(getImmField<ImmBits>(Insn)));
     return MCDisassembler::Success;
 }
 
@@ -214,14 +216,14 @@ DecodeStatus DecodeSysRegsRegisterClass(MCInst &Inst, unsigned RegNo,
     return MCDisassembler::Success;
 }
 
-DecodeStatus DecodeBranchTarget(MCInst &Inst, unsigned Offset,
+DecodeStatus decodeBranchTarget(MCInst &Inst, unsigned Offset,
     uint64_t Address, const void *Decoder)
 {
     Inst.addOperand(MCOperand::createImm((SignExtend32<8>(Offset) * 2) + 2));
     return MCDisassembler::Success;
 }
 
-DecodeStatus DecodeJumpTarget(MCInst &Inst, unsigned Offset,
+DecodeStatus decodeJumpTarget(MCInst &Inst, unsigned Offset,
     uint64_t Address, const void *Decoder)
 {
     Inst.addOperand(MCOperand::createImm((SignExtend32<11>(Offset) * 2) + 2));
