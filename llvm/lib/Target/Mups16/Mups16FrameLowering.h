@@ -44,8 +44,20 @@ public:
 
     bool hasFP(const MachineFunction &MF) const override;
 
+    // Overridden so that we can set up a stack slot for emergency spills, needed if we have to
+    // scavenge a register to emit a LI or LUI/LIU pair for large immediates.
+    void determineCalleeSaves(MachineFunction &MF, BitVector &SavedRegs,
+                              RegScavenger *RS = nullptr) const override;
+
+
 private:
+    // Helper
     void determineFrameLayout(MachineFunction &MF) const;
+
+    // Helper that inserts the minimal set of instructions to adjust a register by an immediate
+    void adjustReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
+                    const DebugLoc &DL, Register DestReg, Register SrcReg,
+                    int64_t Val, MachineInstr::MIFlag Flag) const;
 
     const Mups16Subtarget &STI;
 };

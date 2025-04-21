@@ -36,6 +36,11 @@ Mups16InstrInfo::Mups16InstrInfo(Mups16Subtarget &STI)
 }
 
 
+// If the specified machine instruction is a direct load from a stack slot,
+// return the virtual or physical register number of the destination along with
+// the FrameIndex of the loaded stack slot. If not, return 0. This predicate
+// must return 0 if the instruction has any side effects other than loading
+// from the stack slot.
 unsigned Mups16InstrInfo::isLoadFromStackSlot(const MachineInstr &MI, int &FrameIndex) const
 {
     switch (MI.getOpcode())
@@ -48,7 +53,9 @@ unsigned Mups16InstrInfo::isLoadFromStackSlot(const MachineInstr &MI, int &Frame
         break;
     }
 
-    // If the address is actually a frame index then we're loading from a stack slot.
+    // If the address is actually a frame index then we're loading from a stack
+    // slot. Note that this needs to line up with the instruction created in
+    // loadRegFromStackSlot below.
     if (MI.getOperand(1).isFI() && MI.getOperand(2).isImm() && MI.getOperand(2).getImm() == 0)
     {
         FrameIndex = MI.getOperand(1).getIndex();
@@ -58,6 +65,7 @@ unsigned Mups16InstrInfo::isLoadFromStackSlot(const MachineInstr &MI, int &Frame
     return 0;
 }
 
+//
 unsigned Mups16InstrInfo::isStoreToStackSlot(const MachineInstr &MI, int &FrameIndex) const
 {
     switch (MI.getOpcode())
@@ -69,18 +77,21 @@ unsigned Mups16InstrInfo::isStoreToStackSlot(const MachineInstr &MI, int &FrameI
         break;
     }
 
-    // If the address is actually a frame index then we're storing to a stack slot.
-    if (MI.getOperand(1).isFI() && MI.getOperand(2).isImm() && MI.getOperand(2).getImm() == 0)
+    // If the address is actually a frame index then we're storing to a stack
+    // slot. Note that this needs to line up with the instruction created in
+    // storeRegTotackSlot below.
+    if (MI.getOperand(0).isFI() && MI.getOperand(1).isImm() && MI.getOperand(1).getImm() == 0)
     {
-        FrameIndex = MI.getOperand(1).getIndex();
-        return MI.getOperand(0).getReg();
+        FrameIndex = MI.getOperand(0).getIndex();
+        return MI.getOperand(2).getReg();
     }
 
     return 0;
 }
 
-
-
+// Called to spill a single register to a stack slot. This is relatively easy
+// on Mups16 since all registers are two bytes, so we don't have to worry about
+// different insructions.
 void Mups16InstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
                                           MachineBasicBlock::iterator MI,
                                           Register SrcReg, bool isKill, int FrameIdx,
@@ -89,23 +100,28 @@ void Mups16InstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
 {
     DebugLoc DL;
     if (MI != MBB.end())
-        DL = MI->getDebugLoc();
-    MachineFunction &MF = *MBB.getParent();
-    MachineFrameInfo &MFI = MF.getFrameInfo();
-
-    MachineMemOperand *MMO = MF.getMachineMemOperand(
-            MachinePointerInfo::getFixedStack(MF, FrameIdx),
-            MachineMemOperand::MOStore, MFI.getObjectSize(FrameIdx),
-            MFI.getObjectAlign(FrameIdx));
-
-    if (RC == &MUPS::IntRegsRegClass)
     {
-        BuildMI(MBB, MI, DL, get(MUPS::SW))
-            .addFrameIndex(FrameIdx).addImm(0)
-            .addReg(SrcReg, getKillRegState(isKill)).addMemOperand(MMO);
+        DL = MI->getDebugLoc();
     }
-    else
+    //MachineFunction &MF = *MBB.getParent();
+    //MachineFrameInfo &MFI = MF.getFrameInfo();
+
+    //MachineMemOperand *MMO = MF.getMachineMemOperand(
+    //        MachinePointerInfo::getFixedStack(MF, FrameIdx),
+    //        MachineMemOperand::MOStore, MFI.getObjectSize(FrameIdx),
+    //        MFI.getObjectAlign(FrameIdx));
+
+    if (RC != &MUPS::IntRegsRegClass)
         llvm_unreachable("Cannot store this register to stack slot!");
+
+    // Add a placeholder instruction that stores to the stack. We'll replace
+    // the frame index and offset with the correct registers and offset in
+    // eliminateFrameIndex.
+    BuildMI(MBB, MI, DL, get(MUPS::SW))
+        .addFrameIndex(FrameIdx)
+        .addImm(0)
+        .addReg(SrcReg, getKillRegState(isKill))
+        ;
 }
 
 void Mups16InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,

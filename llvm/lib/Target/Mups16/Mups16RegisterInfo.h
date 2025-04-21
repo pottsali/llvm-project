@@ -34,6 +34,14 @@ namespace llvm {
 
         bool hasBasePointer(const MachineFunction &MF) const;
 
+        // These are required so that we can use extra registers in our frame index elimination,
+        // whenever we need to load large immediates. Setting requiresFrameIndexScavenging allows us to
+        // use virtual registers in the eliminateFrameIndex function. Note we still can't directly use
+        // the register scavenger; to enable that we would have to also override
+        // requiresFrameIndexReplacementScavenging
+        bool requiresRegisterScavenging(const MachineFunction &MF) const override { return true; }
+        bool requiresFrameIndexScavenging(const MachineFunction &MF) const override { return true; }
+
     };
 
 } // end namespace llvm

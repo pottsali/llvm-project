@@ -33,7 +33,7 @@ using namespace llvm;
 #define GET_REGINFO_TARGET_DESC
 #include "Mups16GenRegisterInfo.inc"
 
-#define DEBUG_TYPE "flailing-around"
+#define DEBUG_TYPE "reginfo"
 
 Mups16RegisterInfo::Mups16RegisterInfo()
     : Mups16GenRegisterInfo(MUPS::RA)
@@ -43,7 +43,7 @@ Mups16RegisterInfo::Mups16RegisterInfo()
 const MCPhysReg* Mups16RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const
 {
     static const MCPhysReg CalleeSavedRegs[] = {
-        MUPS::R2, MUPS::R3, MUPS::R4, MUPS::RA,
+        MUPS::R2, MUPS::R3, MUPS::R4, MUPS::R5, MUPS::RA,
         0
     };
     return CalleeSavedRegs;
@@ -80,28 +80,42 @@ void Mups16RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     const TargetInstrInfo *TII = MF.getSubtarget().getInstrInfo();
     const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
 
-    // If possible, keep this code working even if we don't have a frame pointer.
+    // Check if we need a frame pointer.
     bool HasFP = TFI->hasFP(MF);
     DebugLoc DL = MI.getDebugLoc();
 
+    // This frame index is the one we stored as the second operand in Mups16InstrInfo::storeRegToStackSlot
     int FrameIndex = MI.getOperand(FIOperandNum).getIndex();
 
+    // In our case the immediate here is always zero. Not sure if could actually just drop it? Some
+    // backends use it.
+    // In any case, this Offset is the actual byte offset from the beginning of the stack frame.
     int Offset = MF.getFrameInfo().getObjectOffset(FrameIndex) + MI.getOperand(FIOperandNum + 1).getImm();
 
-    // Addressable stack objects are addressed using neg. offsets from fp
-    // or pos. offsets from sp/basepointer
-    if (!HasFP || (needsStackRealignment(MF) && FrameIndex >= 0))
+    // For simplicity for now, just assert that we don't need stack realignment (I don't think we
+    // do? Nothing has stricter alighment than the default two bytes), and that we don't need a base
+    // pointer (only for complicated cases with dynamic stack allocations, I think?)
+    if (needsStackRealignment(MF))
+    {
+        llvm_unreachable("Stack realignment not supported on Mups16");
+    }
+    if (hasBasePointer(MF))
+    {
+        llvm_unreachable("Functions requiring base pointers not supported on Mups16");
+    }
+
+    // Stack objects can either be addressed with a negative offset from the frame pointer (R5) or a
+    // positive offset from SP. If we have a frame pointer we just use that; in theory, if the
+    // offset is more than 15 from the frame pointer we could check if SP is within 16 bytes and use
+    // that instead to avoid a LIU/LUI pair to get the offset into a register, but that's an
+    // optimisation for later.
+    if (!HasFP)
+    {
+        // Change to positive offset from SP
         Offset += MF.getFrameInfo().getStackSize();
+    }
 
     Register FrameReg = getFrameRegister(MF);
-    if (FrameIndex >= 0)
-    {
-        if (hasBasePointer(MF))
-            // FIXME: this should go if we're removing the frame pointer
-            FrameReg = MUPS::R5;
-        else if (needsStackRealignment(MF))
-            FrameReg = MUPS::SP;
-    }
 
     LLVM_DEBUG(dbgs() << "FrameIndex     : " << FrameIndex << "\n"
                       << "Offset         : " << Offset << "\n"
@@ -113,17 +127,27 @@ void Mups16RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                       << "         op2 : " << MI.getOperand(2) << "\n"
                       );
 
-    // Replace frame index with a frame pointer reference.
-    // If the offset is small enough to fit in the immediate field, directly
-    // encode it.
-    // Otherwise scavenge a register and encode it into a LIU, LUI sequence.
-    // The only instructions that can have a frame pointer arg with the addressing modes Mups16
-    // supports are load/store ones, which have a 5-bit immediate.
-    if (!isInt<5>(Offset))
+    // The encoded instruction has a pair of dummy operands, one holding the frame index and one
+    // holding a (zero) offset. This code needs to replace the operands with actual ones that we
+    // will be able to lower to machine instructions.
+    // If the actual Offset value is within the range of a signed 5-bit immediate, we can just
+    // replace the frame index with either SP or R5, and the immediate with Offset.
+    // If the offset is too big, then we need to first generate some new instructions to load the
+    // offset into a (scavenged) register, then change the frame index operand to the new register,
+    // and set the offset to zero.
+    if (isInt<5>(Offset))
     {
-        assert(RS && "Register scavenging must be on");
-        unsigned Reg = RS->FindUnusedReg(&MUPS::IntRegsRegClass);
-        assert(Reg && "Register scavenger failed");
+        // Simple case where the offset fits into the immediate.
+        MI.getOperand(FIOperandNum).ChangeToRegister(FrameReg, /*isDef=*/false);
+        MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
+    }
+    else
+    {
+        //assert(RS && "Register scavenging must be on");
+        //Register Reg = RS->FindUnusedReg(&MUPS::IntRegsRegClass);
+        //assert(Reg && "Register scavenger failed");
+        MachineRegisterInfo &MRI = (*MI.getParent()).getParent()->getRegInfo();
+        Register Reg = MRI.createVirtualRegister(&MUPS::IntRegsRegClass);
 
         // Can we load the offset with a single LI call?
         if (isInt<8>(Offset))
@@ -142,7 +166,7 @@ void Mups16RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                 .addImm(static_cast<uint32_t>(Offset) >> 8);
         }
 
-        // reg = $framereg + $offsetreg
+        // $offsetreg = $framereg + $offsetreg
         BuildMI(*MI.getParent(), II, DL, TII->get(MUPS::ADD), Reg)
             .addReg(FrameReg)
             .addReg(Reg);
@@ -159,16 +183,9 @@ void Mups16RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
             break;
         }
 
-
         // Reg now has the final address, so change the instruction to be a zero offset from Reg
         MI.getOperand(FIOperandNum).ChangeToRegister(Reg, /*isDef=*/false, false, /*isKill=*/true);
         MI.getOperand(FIOperandNum + 1).ChangeToImmediate(0);
-    }
-    else
-    {
-        // Simple case where the offset fits into the immediate.
-        MI.getOperand(FIOperandNum).ChangeToRegister(FrameReg, /*isDef=*/false);
-        MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
     }
     LLVM_DEBUG(dbgs() << "MI after     : " << MI << "\n"
                       << "         op0 : " << MI.getOperand(0) << "\n"
@@ -183,13 +200,16 @@ bool Mups16RegisterInfo::hasBasePointer(const MachineFunction &MF) const
     // When we need stack realignment and there are dynamic allocas, we can't
     // reference off of the stack pointer, so we reserve a base pointer.
     if (needsStackRealignment(MF) && MFI.hasVarSizedObjects())
-        return true;
+        llvm_unreachable("functions requiring base pointer not supported");
     return false;
 }
 
 
 Register Mups16RegisterInfo::getFrameRegister(const MachineFunction &MF) const
 {
-    return MUPS::R5;
+    // If the function needs a frame pointer, use R5. Otherwise, just use SP, and we'll fix up
+    // offsets to be positive instead of negative in eliminateFrameIndex above.
+    const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
+    return TFI->hasFP(MF) ? MUPS::R5 : MUPS::SP;
 }
 
