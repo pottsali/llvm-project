@@ -219,14 +219,14 @@ DecodeStatus DecodeSysRegsRegisterClass(MCInst &Inst, unsigned RegNo,
 DecodeStatus decodeBranchTarget(MCInst &Inst, unsigned Offset,
     uint64_t Address, const void *Decoder)
 {
-    Inst.addOperand(MCOperand::createImm((SignExtend32<8>(Offset) * 2) + 2));
+    Inst.addOperand(MCOperand::createImm(SignExtend32<8>(Offset) * 2));
     return MCDisassembler::Success;
 }
 
 DecodeStatus decodeJumpTarget(MCInst &Inst, unsigned Offset,
     uint64_t Address, const void *Decoder)
 {
-    Inst.addOperand(MCOperand::createImm((SignExtend32<11>(Offset) * 2) + 2));
+    Inst.addOperand(MCOperand::createImm(SignExtend32<11>(Offset) * 2));
     return MCDisassembler::Success;
 }
 

@@ -406,10 +406,34 @@ def LUIWrapper : SDNode<"Mups16ISD::LUI", SDTIntBinOp>;
 def : Pat <(LIUWrapper tglobaladdr:$in), (LIU tglobaladdr:$in)>;
 def : Pat <(LUIWrapper IntReg:$rdd, tglobaladdr:$in), (LUI i16:$rdd, tglobaladdr:$in)>;
 
-// Lowering will
+// Calls. These nodes are manually created in the ISel call lowering.
+def MUPS16JmpLink       : SDNode<"Mups16ISD::JmpLink", 
+                                 SDTypeProfile<0, -1, [SDTCisPtrTy<0>]>,
+                                 [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue, SDNPVariadic]>;
+def MUPS16Callseq_Start : SDNode<"ISD::CALLSEQ_START", 
+                                 SDCallSeqStart<[SDTCisVT<0, i16>, SDTCisVT<0, i16>]>,
+                                 [SDNPHasChain, SDNPOutGlue]>;
+def MUPS16Callseq_End   : SDNode<"ISD::CALLSEQ_END", 
+                                 SDCallSeqStart<[SDTCisVT<0, i16>, SDTCisVT<0, i16>]>,
+                                 [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue]>;
+
+// Stack adjustment. Emitted by the caller to adjust the stack to hold
+// arguments etc. for calls (if we're not using reserved stack that allocates
+// all possible space up-front)
+let Defs = [SP], Uses = [SP], hasSideEffects = 1, hasNoSchedulingInfo = 1 in {
+def ADJCALLSTACKDOWN : MupsPseudo<(outs), (ins i16imm:$amt1, i16imm:$amt2),
+                                  [(MUPS16Callseq_Start timm:$amt1, timm:$amt2)]>;
+def ADJCALLSTACKUP   : MupsPseudo<(outs), (ins i16imm:$amt1, i16imm:$amt2),
+                                  [(MUPS16Callseq_End timm:$amt1, timm:$amt2)]>;
+}
+
+
+
+// Lowering will manually create a node of this type.
 def mups16_ret : SDNode<"Mups16ISD::Ret", SDTNone, [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
 
-// Return
+// Return. Matches the Mups16ISD::Ret node above, and produces a pseudo
+// instruction that's manually lowered to a JR call in Mups16InstrInfo.cpp.
 let isBarrier = 1, isReturn = 1, isTerminator = 1 in
 def RetRA:    MupsPseudo<(outs), (ins),
                       [(mups16_ret)]>;

@@ -58,15 +58,6 @@ namespace llvm {
         explicit Mups16TargetLowering(const TargetMachine &TM,
                 const Mups16Subtarget &STI);
 
-        /*
-            MVT getScalarShiftAmountTy(const DataLayout &, EVT) const override {
-            return MVT::i8;
-            }
-
-            MVT::SimpleValueType getCmpLibcallReturnType() const override {
-            return MVT::i16;
-            }
-            */
         // Return names for custom instruction (jalr, ret etc.)
         const char *getTargetNodeName(unsigned Opcode) const override;
 
@@ -126,6 +117,30 @@ namespace llvm {
 
     private:
 
+        // Called in the caller code, to lower a function call
+        SDValue LowerCall(TargetLowering::CallLoweringInfo &CLI,
+                SmallVectorImpl<SDValue> &InVals) const override;
+
+        // Called in callee code, to handle incoming arguments
+        SDValue LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
+                const SmallVectorImpl<ISD::InputArg> &Ins,
+                const SDLoc &dl, SelectionDAG &DAG,
+                SmallVectorImpl<SDValue> &InVals) const override;
+
+        bool CanLowerReturn(CallingConv::ID CallConv,
+                MachineFunction &MF,
+                bool IsVarArg,
+                const SmallVectorImpl<ISD::OutputArg> &Outs,
+                LLVMContext &Context) const override;
+
+        // Callec in calle code, to handle function return value
+        SDValue LowerReturn(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
+                const SmallVectorImpl<ISD::OutputArg> &Outs,
+                const SmallVectorImpl<SDValue> &OutVals,
+                const SDLoc &dl, SelectionDAG &DAG) const override;
+
+
+
         /*
             SDValue LowerCCCCallTo(SDValue Chain, SDValue Callee,
             CallingConv::ID CallConv, bool isVarArg,
@@ -152,23 +167,6 @@ namespace llvm {
 
 */
 
-        SDValue LowerCall(TargetLowering::CallLoweringInfo &CLI,
-                SmallVectorImpl<SDValue> &InVals) const override;
-        SDValue LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
-                const SmallVectorImpl<ISD::InputArg> &Ins,
-                const SDLoc &dl, SelectionDAG &DAG,
-                SmallVectorImpl<SDValue> &InVals) const override;
-
-        bool CanLowerReturn(CallingConv::ID CallConv,
-                MachineFunction &MF,
-                bool IsVarArg,
-                const SmallVectorImpl<ISD::OutputArg> &Outs,
-                LLVMContext &Context) const override;
-
-        SDValue LowerReturn(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
-                const SmallVectorImpl<ISD::OutputArg> &Outs,
-                const SmallVectorImpl<SDValue> &OutVals,
-                const SDLoc &dl, SelectionDAG &DAG) const override;
 
     };
 } // namespace llvm

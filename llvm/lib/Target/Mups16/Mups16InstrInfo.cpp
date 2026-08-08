@@ -30,7 +30,7 @@ using namespace llvm;
 void Mups16InstrInfo::anchor() {}
 
 Mups16InstrInfo::Mups16InstrInfo(Mups16Subtarget &STI)
-  : Mups16GenInstrInfo(),
+  : Mups16GenInstrInfo(MUPS::ADJCALLSTACKDOWN, MUPS::ADJCALLSTACKUP),
     RI()
 {
 }
